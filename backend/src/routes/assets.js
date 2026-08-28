@@ -4,6 +4,9 @@ const authenticate = require('../middleware/auth');
 const authorize = require('../middleware/role');
 const { generateQRCode } = require('../services/qrcode');
 const ExcelJS = require('exceljs');
+const upload = require('../middleware/upload');
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
 
@@ -129,6 +132,8 @@ router.get('/', async (req, res) => {
         custodyDate: a.custody_date,
         returnDate: a.return_date,
         qrCode: a.qr_code,
+        imageUrl: a.image_url,
+        thumbnailUrl: a.thumbnail_url,
         createdBy: a.created_by,
         creatorName: a.creator_name,
         createdAt: a.created_at,
@@ -208,6 +213,8 @@ router.get('/code/:code', async (req, res) => {
       custodyDate: a.custody_date,
       returnDate: a.return_date,
       qrCode: a.qr_code,
+      imageUrl: a.image_url,
+      thumbnailUrl: a.thumbnail_url,
       createdBy: a.created_by,
       creatorName: a.creator_name,
       createdAt: a.created_at,
@@ -240,6 +247,10 @@ router.get('/:id', async (req, res) => {
     }
 
     const a = result.rows[0];
+    
+    // 取得詳情圖
+    const photosResult = await pool.query('SELECT id, photo_url, created_at FROM asset_photos WHERE asset_id = $1 ORDER BY created_at ASC', [req.params.id]);
+
     res.json({
       id: a.id,
       assetCode: a.asset_code,
@@ -254,6 +265,9 @@ router.get('/:id', async (req, res) => {
       custodyDate: a.custody_date,
       returnDate: a.return_date,
       qrCode: a.qr_code,
+      imageUrl: a.image_url,
+      thumbnailUrl: a.thumbnail_url,
+      detailPhotos: photosResult.rows.map(p => ({ id: p.id, url: p.photo_url, createdAt: p.created_at })),
       createdBy: a.created_by,
       creatorName: a.creator_name,
       createdAt: a.created_at,
@@ -269,7 +283,7 @@ router.get('/:id', async (req, res) => {
  * POST /api/assets
  * 新增財產（admin / manager）
  */
-router.post('/', authorize('admin', 'manager'), async (req, res) => {
+router.post('/', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhoto', maxCount: 1 }, { name: 'thumbnailPhoto', maxCount: 1 }]), async (req, res) => {
   try {
     const { name, description, categoryId, location, custodian, custodianRoleId, custodyDate, returnDate } = req.body;
 
@@ -292,10 +306,10 @@ router.post('/', authorize('admin', 'manager'), async (req, res) => {
     const qrCode = await generateQRCode(assetCode);
 
     const result = await pool.query(
-      `INSERT INTO assets (asset_code, name, description, category_id, location, custodian, custodian_role_id, custody_date, return_date, qr_code, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO assets (asset_code, name, description, category_id, location, custodian, custodian_role_id, custody_date, return_date, qr_code, image_url, thumbnail_url, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
-      [assetCode, name, description || null, categoryId || null, location || null, custodian, custodianRoleId, custodyDate, returnDate || null, qrCode, req.user.id]
+      [assetCode, name, description || null, categoryId || null, location || null, custodian, custodianRoleId, custodyDate, returnDate || null, qrCode, req.files?.mainPhoto?.[0]?.filename || null, req.files?.thumbnailPhoto?.[0]?.filename || null, req.user.id]
     );
 
     const a = result.rows[0];
@@ -323,7 +337,10 @@ router.post('/', authorize('admin', 'manager'), async (req, res) => {
       custodianRoleId: a.custodian_role_id,
       custodyDate: a.custody_date,
       returnDate: a.return_date,
+      returnDate: a.return_date,
       qrCode: a.qr_code,
+      imageUrl: a.image_url,
+      thumbnailUrl: a.thumbnail_url,
       createdBy: a.created_by,
       createdAt: a.created_at,
     });
@@ -387,7 +404,7 @@ router.put('/:id/return', authenticate, async (req, res) => {
  * PUT /api/assets/:id
  * 編輯財產（admin / manager）
  */
-router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
+router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhoto', maxCount: 1 }, { name: 'thumbnailPhoto', maxCount: 1 }]), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, categoryId, location, custodian, custodianRoleId, custodyDate, returnDate } = req.body;
@@ -425,6 +442,8 @@ router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
     if (custodianRoleId !== undefined) { updates.push(`custodian_role_id = $${paramIndex++}`); values.push(custodianRoleId); }
     if (custodyDate !== undefined) { updates.push(`custody_date = $${paramIndex++}`); values.push(custodyDate); }
     if (returnDate !== undefined) { updates.push(`return_date = $${paramIndex++}`); values.push(returnDate || null); }
+    if (req.files?.mainPhoto) { updates.push(`image_url = $${paramIndex++}`); values.push(req.files.mainPhoto[0].filename); }
+    if (req.files?.thumbnailPhoto) { updates.push(`thumbnail_url = $${paramIndex++}`); values.push(req.files.thumbnailPhoto[0].filename); }
     if (updates.length === 0) {
       return res.status(400).json({ error: '沒有提供要更新的欄位' });
     }
@@ -478,6 +497,8 @@ router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
       custodyDate: a.custody_date,
       returnDate: a.return_date,
       qrCode: a.qr_code,
+      imageUrl: a.image_url,
+      thumbnailUrl: a.thumbnail_url,
       createdAt: a.created_at,
       updatedAt: a.updated_at,
     });
@@ -655,6 +676,93 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
     res.end();
   } catch (err) {
     console.error('匯出 QR Code 錯誤:', err);
+    res.status(500).json({ error: '伺服器內部錯誤' });
+  }
+});
+
+/**
+ * POST /api/assets/:id/photos
+ * 上傳多張財產詳情圖
+ */
+router.post('/:id/photos', authorize('admin', 'manager'), upload.array('detailPhotos', 10), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: '請提供要上傳的圖片' });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const savedPhotos = [];
+      for (const file of req.files) {
+        const result = await client.query(
+          'INSERT INTO asset_photos (asset_id, photo_url) VALUES ($1, $2) RETURNING id, photo_url, created_at',
+          [id, file.filename]
+        );
+        savedPhotos.push({
+          id: result.rows[0].id,
+          url: result.rows[0].photo_url,
+          createdAt: result.rows[0].created_at
+        });
+      }
+      
+      // 記錄日誌
+      await client.query(
+        'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
+        [req.user.id, req.user.username, 'UPLOAD_PHOTOS', 'assets', parseInt(id), JSON.stringify({ count: req.files.length })]
+      );
+      
+      await client.query('COMMIT');
+      res.json({ photos: savedPhotos });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('上傳詳情圖錯誤:', err);
+    res.status(500).json({ error: '伺服器內部錯誤' });
+  }
+});
+
+/**
+ * DELETE /api/assets/:id/photos/:photoId
+ * 刪除財產詳情圖
+ */
+router.delete('/:id/photos/:photoId', authorize('admin', 'manager'), async (req, res) => {
+  try {
+    const { id, photoId } = req.params;
+    
+    const result = await pool.query(
+      'DELETE FROM asset_photos WHERE id = $1 AND asset_id = $2 RETURNING photo_url',
+      [photoId, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到指定的圖片' });
+    }
+
+    // 嘗試從檔案系統刪除實體檔案
+    try {
+      const filePath = path.join(__dirname, '../../public/uploads', result.rows[0].photo_url);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (fsErr) {
+      console.error('刪除實體檔案失敗, 忽略:', fsErr);
+    }
+
+    // 記錄日誌
+    await pool.query(
+      'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
+      [req.user.id, req.user.username, 'DELETE_PHOTO', 'assets', parseInt(id), JSON.stringify({ photoId })]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('刪除詳情圖錯誤:', err);
     res.status(500).json({ error: '伺服器內部錯誤' });
   }
 });

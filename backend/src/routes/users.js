@@ -43,8 +43,9 @@ router.get('/', async (req, res) => {
  * 新增使用者（僅 admin）
  */
 router.post('/', authorize('admin'), async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { username, password, displayName, role } = req.body;
+    const { username, password, displayName, role, roleIds } = req.body;
 
     if (!username || !password || !displayName) {
       return res.status(400).json({ error: '請提供帳號、密碼和顯示名稱' });
@@ -60,8 +61,14 @@ router.post('/', authorize('admin'), async (req, res) => {
       return res.status(400).json({ error: '無效的角色' });
     }
 
+    if (userRole === 'manager') {
+      if (!Array.isArray(roleIds) || roleIds.length === 0) {
+        return res.status(400).json({ error: '職類管理員必須至少分配一個職類' });
+      }
+    }
+
     // 檢查帳號是否已存在
-    const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+    const existing = await client.query('SELECT id FROM users WHERE username = $1', [username]);
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: '帳號已存在' });
     }
@@ -69,18 +76,27 @@ router.post('/', authorize('admin'), async (req, res) => {
     // 雜湊密碼
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await pool.query(
+    await client.query('BEGIN');
+
+    const result = await client.query(
       'INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, display_name, role, created_at',
       [username, hashedPassword, displayName, userRole]
     );
 
     const user = result.rows[0];
 
+    if (userRole === 'manager' && roleIds && roleIds.length > 0) {
+      const values = roleIds.map(roleId => `(${user.id}, ${roleId})`).join(', ');
+      await client.query(`INSERT INTO user_custodian_roles (user_id, role_id) VALUES ${values}`);
+    }
+
     // 記錄日誌
-    await pool.query(
+    await client.query(
       'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
       [req.user.id, req.user.username, 'CREATE', 'users', user.id, JSON.stringify({ createdUser: username, role: userRole })]
     );
+
+    await client.query('COMMIT');
 
     res.status(201).json({
       id: user.id,
@@ -90,8 +106,11 @@ router.post('/', authorize('admin'), async (req, res) => {
       createdAt: user.created_at,
     });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('新增使用者錯誤:', err);
     res.status(500).json({ error: '伺服器內部錯誤' });
+  } finally {
+    client.release();
   }
 });
 
@@ -100,13 +119,27 @@ router.post('/', authorize('admin'), async (req, res) => {
  * 更新使用者
  */
 router.put('/:id', authorize('admin'), async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
-    const { displayName, role, password } = req.body;
+    const { displayName, role, password, roleIds } = req.body;
 
     // 不允許修改自己的角色
     if (parseInt(id) === req.user.id && role && role !== req.user.role) {
       return res.status(400).json({ error: '不能修改自己的角色' });
+    }
+
+    // 當指定修改為 manager，或是未傳入 role (表示維持現狀) 但送出了 roleIds 時，如果使用者原本就是 manager，都要進行檢查
+    let userRole = role;
+    if (!userRole) {
+      const uRes = await client.query('SELECT role FROM users WHERE id = $1', [id]);
+      if (uRes.rows.length > 0) userRole = uRes.rows[0].role;
+    }
+
+    if (userRole === 'manager' && roleIds !== undefined) {
+      if (!Array.isArray(roleIds) || roleIds.length === 0) {
+        return res.status(400).json({ error: '職類管理員必須至少分配一個職類' });
+      }
     }
 
     const updates = [];
@@ -136,29 +169,52 @@ router.put('/:id', authorize('admin'), async (req, res) => {
       values.push(hashedPassword);
     }
 
-    if (updates.length === 0) {
-      return res.status(400).json({ error: '沒有提供要更新的欄位' });
+    // If there are no updates to users table, we still might need to update roleIds
+    let user;
+    await client.query('BEGIN');
+
+    if (updates.length > 0) {
+      updates.push(`updated_at = NOW()`);
+      values.push(id);
+      
+      const result = await client.query(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, display_name, role, updated_at`,
+        values
+      );
+
+      if (result.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: '使用者不存在' });
+      }
+      user = result.rows[0];
+    } else {
+      const result = await client.query('SELECT id, username, display_name, role, updated_at FROM users WHERE id = $1', [id]);
+      if (result.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: '使用者不存在' });
+      }
+      user = result.rows[0];
     }
 
-    updates.push(`updated_at = NOW()`);
-    values.push(id);
-
-    const result = await pool.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, display_name, role, updated_at`,
-      values
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: '使用者不存在' });
+    // Handle roleIds update
+    if (user.role === 'manager' && roleIds !== undefined) {
+      await client.query('DELETE FROM user_custodian_roles WHERE user_id = $1', [id]);
+      if (roleIds.length > 0) {
+        const rValues = roleIds.map(roleId => `(${id}, ${roleId})`).join(', ');
+        await client.query(`INSERT INTO user_custodian_roles (user_id, role_id) VALUES ${rValues}`);
+      }
+    } else if (user.role !== 'manager') {
+      // 確保非 manager 不會有職類關聯
+      await client.query('DELETE FROM user_custodian_roles WHERE user_id = $1', [id]);
     }
-
-    const user = result.rows[0];
 
     // 記錄日誌
-    await pool.query(
+    await client.query(
       'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
       [req.user.id, req.user.username, 'UPDATE', 'users', user.id, JSON.stringify({ updatedFields: Object.keys(req.body) })]
     );
+
+    await client.query('COMMIT');
 
     res.json({
       id: user.id,
@@ -168,8 +224,11 @@ router.put('/:id', authorize('admin'), async (req, res) => {
       updatedAt: user.updated_at,
     });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('更新使用者錯誤:', err);
     res.status(500).json({ error: '伺服器內部錯誤' });
+  } finally {
+    client.release();
   }
 });
 

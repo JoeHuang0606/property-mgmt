@@ -49,9 +49,18 @@ CREATE TABLE IF NOT EXISTS assets (
   qr_code         TEXT,
   description     TEXT,
   image_url       TEXT,
+  thumbnail_url   TEXT,
   created_by      INT REFERENCES users(id) ON DELETE SET NULL,
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 建立財產詳情圖表
+CREATE TABLE IF NOT EXISTS asset_photos (
+  id          SERIAL PRIMARY KEY,
+  asset_id    INT REFERENCES assets(id) ON DELETE CASCADE,
+  photo_url   TEXT NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 建立操作日誌表
@@ -84,25 +93,9 @@ CREATE INDEX IF NOT EXISTS idx_assets_category ON assets(category_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_asset_custody_history_asset ON asset_custody_history(asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_photos_asset ON asset_photos(asset_id);
 
--- 插入預設分類
-INSERT INTO categories (name, prefix) VALUES
-  ('電腦設備', 'IT'),
-  ('辦公傢俱', 'FUR'),
-  ('通訊設備', 'COM'),
-  ('車輛', 'CAR'),
-  ('儀器設備', 'EQ'),
-  ('其他', 'OTH')
-ON CONFLICT (name) DO NOTHING;
 
--- 插入預設職類
-INSERT INTO custodian_roles (name, prefix) VALUES
-  ('教師', 'TEA'),
-  ('職員', 'STA'),
-  ('約聘人員', 'CON'),
-  ('學生', 'STU'),
-  ('其他', 'OTH')
-ON CONFLICT (name) DO NOTHING;
 
 -- 插入預設管理員帳號（密碼: admin123，已用 bcrypt 雜湊）
 -- $2a$10$... 為 bcrypt hash of 'admin123'

@@ -12,9 +12,13 @@ function getToken() {
 async function request(endpoint, options = {}) {
   const token = getToken();
   const headers = {
-    'Content-Type': 'application/json',
     ...options.headers,
   };
+
+  // 只有當 body 是字串時，才預設為 application/json
+  if (typeof options.body === 'string' && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -99,12 +103,12 @@ export const assetsAPI = {
   create: (data) =>
     request('/assets', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     }),
   update: (id, data) =>
     request(`/assets/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     }),
   returnAsset: (id, returnDate) =>
     request(`/assets/${id}/return`, {
@@ -144,6 +148,15 @@ export const assetsAPI = {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   },
+  uploadDetailPhotos: (id, formData) =>
+    request(`/assets/${id}/photos`, {
+      method: 'POST',
+      body: formData,
+    }),
+  deleteDetailPhoto: (id, photoId) =>
+    request(`/assets/${id}/photos/${photoId}`, {
+      method: 'DELETE',
+    }),
 };
 
 // Categories API
@@ -158,6 +171,11 @@ export const categoriesAPI = {
     request(`/categories/${id}`, {
       method: 'DELETE',
     }),
+  update: (id, data) =>
+    request(`/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 };
 
 // Roles API
@@ -171,6 +189,11 @@ export const rolesAPI = {
   delete: (id) =>
     request(`/roles/${id}`, {
       method: 'DELETE',
+    }),
+  update: (id, data) =>
+    request(`/roles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     }),
 };
 

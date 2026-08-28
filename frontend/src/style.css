@@ -24,13 +24,12 @@
   --success: #34C759;
 
   /* 背景 - Light */
-  --bg-deep: #FFFFFF;
-  /* Pure White */
+  --bg-deep: #F2F2F7;
   --bg-base: rgba(255, 255, 255, 0.4);
-  --bg-surface: rgba(255, 255, 255, 0.5);
-  --bg-elevated: rgba(255, 255, 255, 0.65);
+  --bg-surface: rgba(255, 255, 255, 0.4);
+  --bg-elevated: rgba(255, 255, 255, 0.4);
   --bg-glass: rgba(255, 255, 255, 0.4);
-  --bg-glass-hover: rgba(255, 255, 255, 0.7);
+  --bg-glass-hover: rgba(255, 255, 255, 0.55);
 
   /* 背景光暈 (Liquid Orbs) - Light (Macaron Colors) */
   --orb-1: rgba(255, 182, 193, 0.5);
@@ -72,9 +71,10 @@
   --shadow-glow: 0 0 30px var(--primary-glow);
 
   /* 過渡 */
-  --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   /* Apple's spring-like ease */
-  --transition-fast: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
 
   /* 尺寸 */
   --sidebar-width: 260px;
@@ -100,13 +100,12 @@
   --success: #32D74B;
 
   /* 背景 - Dark (OLED-friendly) */
-  --bg-deep: #1C1C1E;
-  /* Dark Grey */
-  --bg-base: rgba(28, 28, 30, 0.4);
-  --bg-surface: rgba(28, 28, 30, 0.5);
-  --bg-elevated: rgba(44, 44, 46, 0.6);
-  --bg-glass: rgba(28, 28, 30, 0.4);
-  --bg-glass-hover: rgba(44, 44, 46, 0.7);
+  --bg-deep: #121212;
+  --bg-base: rgba(28, 28, 30, 0.25);
+  --bg-surface: rgba(28, 28, 30, 0.25);
+  --bg-elevated: rgba(28, 28, 30, 0.25);
+  --bg-glass: rgba(28, 28, 30, 0.25);
+  --bg-glass-hover: rgba(44, 44, 46, 0.45);
 
   /* 背景光暈 (Liquid Orbs) - Dark (Macaron Colors) */
   --orb-1: rgba(255, 182, 193, 0.25);
@@ -206,7 +205,6 @@ a:hover {
 .page-content {
   padding: 28px 32px;
   max-width: 1400px;
-  animation: fadeInUp 0.4s ease-out;
 }
 
 @keyframes fadeInUp {
@@ -313,7 +311,9 @@ a:hover {
   align-items: center;
   gap: 10px;
   padding: 6px 14px;
-  background: var(--bg-surface);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-glass);
   cursor: pointer;
@@ -435,16 +435,21 @@ a:hover {
   transition: var(--transition);
   border: 1px solid transparent;
   text-decoration: none;
+  background: transparent;
 }
 
 .sidebar-link:hover {
   background: var(--bg-glass-hover);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--text-primary);
   border-color: var(--border-glass);
 }
 
 .sidebar-link.active {
   background: linear-gradient(135deg, rgba(108, 92, 231, 0.15), rgba(0, 206, 201, 0.08));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--primary-light);
   border-color: rgba(108, 92, 231, 0.25);
   box-shadow: 0 0 20px rgba(108, 92, 231, 0.1);
@@ -524,16 +529,28 @@ a:hover {
 }
 
 .btn-ghost {
-  background: var(--bg-surface);
+  background: var(--bg-glass);
   color: var(--text-primary);
   border: 1px solid var(--border-glass);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .btn-ghost:hover {
   background: var(--bg-glass-hover);
   border-color: var(--border-hover);
+}
+
+.btn-secondary {
+  background: #8E8E93;
+  color: #FFFFFF;
+  border: none;
+  box-shadow: 0 4px 15px rgba(142, 142, 147, 0.3);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #7a7a7e;
+  box-shadow: 0 6px 20px rgba(142, 142, 147, 0.4);
 }
 
 .btn-sm {
@@ -548,7 +565,7 @@ a:hover {
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: not-allowed;
   transform: none !important;
 }
@@ -556,8 +573,8 @@ a:hover {
 /* --- 卡片 (Liquid Glass) --- */
 .card {
   background: var(--bg-glass);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-xl);
   padding: 24px;
@@ -594,8 +611,8 @@ a:hover {
 
 .stat-card {
   background: var(--bg-glass);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-xl);
   padding: 24px;
@@ -708,8 +725,8 @@ a:hover {
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-glass);
   background: var(--bg-glass);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shadow-sm);
 }
 
@@ -727,7 +744,7 @@ thead th {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border-glass);
-  background: var(--bg-surface);
+  background: transparent;
   white-space: nowrap;
 }
 
@@ -744,6 +761,14 @@ tbody tr {
 
 tbody tr:hover {
   background: var(--bg-glass-hover);
+}
+
+tbody tr.selected {
+  background: rgba(128, 128, 128, 0.15);
+}
+
+tbody tr.selected:hover {
+  background: rgba(128, 128, 128, 0.25);
 }
 
 tbody tr:last-child td {
@@ -773,7 +798,9 @@ tbody tr:last-child td {
   font-family: var(--font-sans);
   font-size: 0.95rem;
   color: var(--text-primary);
-  background: var(--bg-surface);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
   outline: none;
@@ -902,8 +929,8 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 
 .modal {
   background: var(--bg-glass);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-xl);
   width: 100%;
@@ -932,7 +959,9 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   width: 32px;
   height: 32px;
   border: none;
-  background: var(--bg-surface);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 50%;
   color: var(--text-secondary);
   cursor: pointer;
@@ -983,7 +1012,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   min-width: 300px;
   max-width: 450px;
   animation: slideInLeft 0.3s ease-out;
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
 }
 
 .toast-success {
@@ -1160,7 +1189,9 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   font-family: var(--font-sans);
   font-size: 0.9rem;
   color: var(--text-primary);
-  background: var(--bg-surface);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-sm);
   outline: none;
@@ -1181,7 +1212,9 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   font-family: var(--font-sans);
   font-size: 0.85rem;
   color: var(--text-primary);
-  background: var(--bg-surface);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-sm);
   outline: none;
@@ -1214,7 +1247,9 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   width: 36px;
   height: 36px;
   border: 1px solid var(--border-glass);
-  background: var(--bg-surface);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -1387,7 +1422,9 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 .timeline-content {
-  background: var(--bg-surface);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-sm);
   padding: 12px 16px;
@@ -1406,7 +1443,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 
 /* --- 骨架屏 --- */
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
+  background: linear-gradient(90deg, var(--bg-glass) 25%, var(--bg-elevated) 50%, var(--bg-glass) 75%);
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-sm);
@@ -1605,11 +1642,38 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
     max-width: calc(100vw - 40px);
   }
 
-  /* 行動版表格微調 */
+  /* 行動版表格微調 (強制不允許左右滑動) */
+  .table-wrap {
+    overflow-x: hidden !important;
+    width: 100%;
+  }
+  
+  table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
   th,
   td {
-    padding: 12px 10px;
-    font-size: 0.85rem;
+    padding: 10px 4px !important;
+    font-size: 0.8rem !important;
+    word-wrap: break-word !important;
+  }
+  
+  .table-wrap:not(.mobile-card-table) th,
+  .table-wrap:not(.mobile-card-table) td {
+    text-align: center !important;
+  }
+  
+  .table-wrap:not(.mobile-card-table) .action-btns {
+    justify-content: center !important;
+  }
+  
+  .icon-btn,
+  .action-btns,
+  .material-icons-round {
+    white-space: nowrap !important;
+    word-break: normal !important;
   }
   
   .action-btns {
@@ -1658,7 +1722,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   width: 34px;
   height: 34px;
   border: 1px solid var(--border-glass);
-  background: var(--bg-surface);
+  background: var(--bg-glass);
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -1794,11 +1858,28 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   .sidebar.open {
     transform: translateX(0);
   }
+  
+  /* Additional Grids */
+  .asset-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .info-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .modal-content {
+    width: 95%;
+    max-width: none;
+    margin: 20px auto;
+  }
+
   .sidebar-backdrop {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.3);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(12px);
     z-index: 150;
     opacity: 0;
     visibility: hidden;
@@ -1810,47 +1891,54 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   }
 
   /* Table Cards */
-  .table-wrap {
+  .mobile-card-table {
     background: transparent;
     border: none;
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
-  table, thead, tbody, th, td, tr {
+  .mobile-card-table table, 
+  .mobile-card-table thead, 
+  .mobile-card-table tbody, 
+  .mobile-card-table th, 
+  .mobile-card-table td, 
+  .mobile-card-table tr {
     display: block;
   }
-  thead {
+  .mobile-card-table thead {
     display: none;
   }
-  tbody tr {
+  .mobile-card-table tbody tr {
     border: 1px solid var(--border-glass);
     padding: 16px;
     margin-bottom: 16px;
-    background: var(--bg-surface);
+    background: var(--bg-glass);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
   }
-  tbody td {
+  .mobile-card-table tbody td {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 0;
+    text-align: right;
   }
-  tbody td:last-child {
+  .mobile-card-table tbody td:last-child {
     border-bottom: none;
   }
-  tbody td::before {
+  .mobile-card-table tbody td::before {
     content: attr(data-label);
     font-size: 0.75rem;
     color: var(--text-muted);
     text-transform: uppercase;
     font-weight: 600;
+    text-align: left;
   }
-  .action-btns {
-    width: 100%;
+  .mobile-card-table .action-btns {
     justify-content: flex-end;
+    margin-left: auto;
   }
 }
 

@@ -54,7 +54,7 @@ async function loadUsers() {
     const roleText = { admin: '管理員', manager: '職類管理員', user: '使用者' };
 
     tableEl.innerHTML = `
-      <div class="table-wrap">
+      <div class="table-wrap mobile-card-table">
         <table>
           <thead>
             <tr>
@@ -68,13 +68,13 @@ async function loadUsers() {
           <tbody>
             ${users.map(u => `
               <tr>
-                <td><code style="font-size:0.85rem;">${u.username}</code></td>
-                <td><strong>${u.displayName}</strong></td>
-                <td><span class="badge badge-${u.role}">${roleText[u.role] || u.role}</span></td>
-                <td style="color:var(--text-muted);font-size:0.85rem;">${new Date(u.createdAt).toLocaleString('zh-TW')}</td>
-                <td>
+                <td data-label="帳號"><code style="font-size:0.85rem;">${u.username}</code></td>
+                <td data-label="顯示名稱"><strong>${u.displayName}</strong></td>
+                <td data-label="角色"><span class="badge badge-${u.role}">${roleText[u.role] || u.role}</span></td>
+                <td data-label="建立時間" style="color:var(--text-muted);font-size:0.85rem;">${new Date(u.createdAt).toLocaleString('zh-TW')}</td>
+                <td data-label="操作">
                   <div class="action-btns">
-                    <button class="icon-btn" data-edit-id="${u.id}" data-edit-username="${u.username}" data-edit-display="${u.displayName}" data-edit-role="${u.role}" title="編輯">
+                    <button class="icon-btn" data-edit-id="${u.id}" data-edit-username="${u.username}" data-edit-display="${u.displayName}" data-edit-role="${u.role}" data-edit-assigned-roles='${JSON.stringify(u.assignedRoles || [])}' title="編輯">
                       <span class="material-icons-round">edit</span>
                     </button>
                     ${u.role === 'manager' ? `
@@ -104,6 +104,7 @@ async function loadUsers() {
           username: btn.dataset.editUsername,
           displayName: btn.dataset.editDisplay,
           role: btn.dataset.editRole,
+          assignedRoles: JSON.parse(btn.dataset.editAssignedRoles || '[]')
         });
       });
     });
@@ -150,8 +151,19 @@ async function loadUsers() {
   }
 }
 
-function showUserForm(user = null) {
+async function showUserForm(user = null) {
   const isEdit = !!user;
+
+  // 取得全部職類列表
+  let allRoles = [];
+  try {
+    allRoles = await rolesAPI.list();
+  } catch (err) {
+    showToast('無法取得職類列表', 'error');
+    return;
+  }
+
+  const assignedRolesSet = new Set(user?.assignedRoles || []);
 
   const body = document.createElement('div');
   body.innerHTML = `
@@ -177,7 +189,31 @@ function showUserForm(user = null) {
         <option value="admin" ${user?.role === 'admin' ? 'selected' : ''}>管理員</option>
       </select>
     </div>
+    <div class="form-group" id="modal-role-selection" style="display: ${user?.role === 'manager' ? 'block' : 'none'}; border-top: 1px solid var(--border-glass); padding-top: 16px; margin-top: 16px;">
+      <label class="form-label">管理職類 (至少選擇一項) *</label>
+      <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 8px; border: 1px solid var(--border-glass); border-radius: var(--radius-sm); background: rgba(0,0,0,0.2);">
+        ${allRoles.length === 0 ? '<span style="color:var(--text-muted);">尚無職類資料</span>' : 
+          allRoles.map(r => `
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" name="managed_roles" value="${r.id}" ${assignedRolesSet.has(r.id) ? 'checked' : ''} />
+              <span>${r.name} (${r.prefix})</span>
+            </label>
+          `).join('')
+        }
+      </div>
+    </div>
   `;
+
+  // 監聽角色切換
+  const roleSelect = body.querySelector('#modal-role');
+  const roleSelectionDiv = body.querySelector('#modal-role-selection');
+  roleSelect.addEventListener('change', (e) => {
+    if (e.target.value === 'manager') {
+      roleSelectionDiv.style.display = 'block';
+    } else {
+      roleSelectionDiv.style.display = 'none';
+    }
+  });
 
   const footer = document.createElement('div');
   footer.style.display = 'flex';
@@ -207,6 +243,16 @@ function showUserForm(user = null) {
     const displayName = body.querySelector('#modal-display').value.trim();
     const password = body.querySelector('#modal-password').value;
     const role = body.querySelector('#modal-role').value;
+    
+    let roleIds = [];
+    if (role === 'manager') {
+      const checkboxes = body.querySelectorAll('input[name="managed_roles"]:checked');
+      roleIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+      if (roleIds.length === 0) {
+        showToast('職類管理員必須至少選擇一個職類', 'warning');
+        return;
+      }
+    }
 
     if (!displayName) {
       showToast('請填寫顯示名稱', 'warning');
@@ -218,7 +264,7 @@ function showUserForm(user = null) {
       saveBtn.textContent = '處理中...';
 
       if (isEdit) {
-        const updateData = { displayName, role };
+        const updateData = { displayName, role, roleIds };
         if (password) updateData.password = password;
         await usersAPI.update(user.id, updateData);
         showToast('帳號已更新', 'success');
@@ -230,7 +276,7 @@ function showUserForm(user = null) {
           saveBtn.textContent = '建立';
           return;
         }
-        await usersAPI.create({ username, password, displayName, role });
+        await usersAPI.create({ username, password, displayName, role, roleIds });
         showToast('帳號已建立', 'success');
       }
 

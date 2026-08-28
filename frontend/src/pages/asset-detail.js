@@ -4,7 +4,7 @@
 import { assetsAPI } from '../api.js';
 import { isManager, isAdmin, getUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
-import { showConfirm } from '../components/modal.js';
+import { showConfirm, showModal } from '../components/modal.js';
 import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
 import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
 import { navigate } from '../router.js';
@@ -56,12 +56,12 @@ function renderDetail(a, history = []) {
   let historyHtml = '';
   if (history.length > 0) {
     historyHtml = `
-      <div class="card" style="margin-top: 24px;">
+      <div class="card">
         <h3 class="card-title" style="margin-bottom: 20px; display:flex; align-items:center; gap:8px;">
           <span class="material-icons-round" style="color:var(--primary-light);">history</span>
           保管歷史紀錄
         </h3>
-        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <div class="table-responsive mobile-card-table" style="max-height: 400px; overflow-y: auto;">
           <table class="table">
             <thead>
               <tr>
@@ -73,9 +73,9 @@ function renderDetail(a, history = []) {
             <tbody>
               ${history.map(record => `
                 <tr>
-                  <td style="font-weight: 500;">${record.custodian}</td>
-                  <td>${new Date(record.takeDate).toLocaleDateString('zh-TW')}</td>
-                  <td>${record.returnDate ? new Date(record.returnDate).toLocaleDateString('zh-TW') : '<span class="badge badge-success">保管中</span>'}</td>
+                  <td data-label="保管人" style="font-weight: 500;">${record.custodian}</td>
+                  <td data-label="領取日期">${new Date(record.takeDate).toLocaleDateString('zh-TW')}</td>
+                  <td data-label="歸還日期">${record.returnDate ? new Date(record.returnDate).toLocaleDateString('zh-TW') : '<span class="badge badge-success">保管中</span>'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -85,7 +85,7 @@ function renderDetail(a, history = []) {
     `;
   } else {
     historyHtml = `
-      <div class="card" style="margin-top: 24px;">
+      <div class="card">
         <h3 class="card-title" style="margin-bottom: 20px; display:flex; align-items:center; gap:8px;">
           <span class="material-icons-round" style="color:var(--primary-light);">history</span>
           保管歷史紀錄
@@ -124,10 +124,11 @@ function renderDetail(a, history = []) {
       </div>
     </div>
 
-    <div class="asset-detail-grid">
+    <div class="asset-detail-grid" style="grid-template-columns: 2.5fr 1fr;">
+      <!-- 第一列：財產資訊與 QR Code -->
       <div class="card">
         <h3 class="card-title" style="margin-bottom:20px;">財產資訊</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+        <div class="info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
           <div class="detail-field">
             <div class="detail-label">名稱</div>
             <div class="detail-value">${a.name}</div>
@@ -160,10 +161,11 @@ function renderDetail(a, history = []) {
             <div class="detail-label">歸還日期</div>
             <div class="detail-value">${a.returnDate ? formatDate(a.returnDate) : '未設定'}</div>
           </div>
-          <div class="detail-field" style="grid-column:1/-1;">
+          <div class="detail-field">
             <div class="detail-label">描述</div>
             <div class="detail-value">${a.description || '無描述'}</div>
           </div>
+          <div class="detail-field"></div>
           <div class="detail-field">
             <div class="detail-label">建立者</div>
             <div class="detail-value">${a.creatorName || '-'}</div>
@@ -174,48 +176,79 @@ function renderDetail(a, history = []) {
           </div>
         </div>
       </div>
-
-      <div>
-        <div class="card">
-          <h3 class="card-title" style="margin-bottom:16px;text-align:center;">QR Code</h3>
-          <div class="qr-display">
-            ${a.qrCode ? `
-              <img src="${a.qrCode}" alt="QR Code: ${a.assetCode}" id="qr-img" />
-              <div class="qr-code-label">${a.assetCode}</div>
-              <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;">
-                <button class="btn btn-ghost btn-sm" id="btn-download-qr">
-                  <span class="material-icons-round">download</span>
-                  下載
-                </button>
-                <button class="btn btn-ghost btn-sm" id="btn-print-qr">
-                  <span class="material-icons-round">print</span>
-                  列印
+      
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom:16px;text-align:center;">QR Code</h3>
+        <div class="qr-display">
+          ${a.qrCode ? `
+            <img src="${a.qrCode}" alt="QR Code: ${a.assetCode}" id="qr-img" style="background: white; padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 16px;" />
+            <div style="font-family: monospace; color: var(--primary-light); text-align: center; margin-bottom: 16px; letter-spacing: 1px;">${a.assetCode}</div>
+            <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;">
+              <button class="btn btn-sm" id="btn-download-qr" style="border: 1px solid var(--border-glass); background: transparent; border-radius: 20px; padding: 6px 16px;">
+                <span class="material-icons-round" style="font-size: 18px;">download</span>
+                下載
+              </button>
+              <button class="btn btn-sm" id="btn-print-qr" style="border: 1px solid var(--border-glass); background: transparent; border-radius: 20px; padding: 6px 16px;">
+                <span class="material-icons-round" style="font-size: 18px;">print</span>
+                列印
+              </button>
+            </div>
+            
+            ${canTakeCustody ? `
+              <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
+                <button class="btn btn-primary" id="btn-take-custody" data-id="${a.id}" style="width: 100%;">
+                  <span class="material-icons-round">pan_tool</span>
+                  領取保管
                 </button>
               </div>
-              
-              ${canTakeCustody ? `
-                <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
-                  <button class="btn btn-primary" id="btn-take-custody" data-id="${a.id}" style="width: 100%;">
-                    <span class="material-icons-round">pan_tool</span>
-                    領取保管
-                  </button>
-                </div>
-              ` : ''}
-              ${canReturn ? `
-                <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
-                  <button class="btn btn-accent" id="btn-return-asset" data-id="${a.id}" style="width: 100%;">
-                    <span class="material-icons-round">assignment_return</span>
-                    確認歸還
-                  </button>
-                </div>
-              ` : ''}
-            ` : '<p style="color:var(--text-muted);">無 QR Code</p>'}
-          </div>
+            ` : ''}
+            ${canReturn ? `
+              <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
+                <button class="btn btn-accent" id="btn-return-asset" data-id="${a.id}" style="width: 100%;">
+                  <span class="material-icons-round">assignment_return</span>
+                  確認歸還
+                </button>
+              </div>
+            ` : ''}
+          ` : '<p style="color:var(--text-muted);">無 QR Code</p>'}
         </div>
       </div>
+
+      <!-- 第二列：財產照片與歷史紀錄 -->
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+          <div><span class="material-icons-round" style="color:var(--primary-light); vertical-align:middle;">image</span> 財產照片</div>
+        </h3>
+        
+        ${a.imageUrl ? `
+          <div style="margin-bottom: 24px;">
+            <div class="detail-label" style="margin-bottom: 8px;">主要照片</div>
+            <img src="/api/uploads/${a.imageUrl}" class="enlargeable-image" alt="Main Photo" style="max-width: 100%; border-radius: 8px; max-height: 400px; object-fit: contain; background: var(--bg-surface); cursor: pointer;" />
+          </div>
+        ` : `
+          <div style="margin-bottom: 24px;">
+            <div class="detail-label" style="margin-bottom: 8px;">主要照片</div>
+            <div style="width:100%; height:300px; background:var(--bg-secondary); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">
+              <span class="material-icons-round" style="font-size:64px;">image_not_supported</span>
+            </div>
+          </div>
+        `}
+
+        <div class="detail-label" style="margin-bottom: 8px;">詳情圖片 (${a.detailPhotos ? a.detailPhotos.length : 0})</div>
+        ${a.detailPhotos && a.detailPhotos.length > 0 ? `
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
+            ${a.detailPhotos.map(p => `
+              <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border-glass);">
+                <img src="/api/uploads/${p.url}" class="enlargeable-image" alt="Detail Photo" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" />
+
+              </div>
+            `).join('')}
+          </div>
+        ` : '<p style="color:var(--text-muted);">無詳情圖片</p>'}
+      </div>
+
+      ${historyHtml}
     </div>
-    
-    ${historyHtml}
   `;
 
   // 下載 QR Code
@@ -262,7 +295,6 @@ function renderDetail(a, history = []) {
           btn.innerHTML = '<span class="material-icons-round rotate">sync</span> 處理中...';
           await assetsAPI.takeCustody(a.id);
           showToast('財產領取成功', 'success');
-          // 重新載入以更新畫面
           const [updatedAsset, historyData] = await Promise.all([
             assetsAPI.get(a.id),
             assetsAPI.getHistory(a.id)
@@ -288,7 +320,6 @@ function renderDetail(a, history = []) {
           btn.innerHTML = '<span class="material-icons-round rotate">sync</span> 處理中...';
           await assetsAPI.returnAsset(a.id, returnDate);
           showToast('財產歸還成功', 'success');
-          // 重新載入以更新畫面
           const [updatedAsset, historyData] = await Promise.all([
             assetsAPI.get(a.id),
             assetsAPI.getHistory(a.id)
@@ -324,6 +355,20 @@ function renderDetail(a, history = []) {
       });
     });
   }
+
+  // 點擊圖片放大
+  const enlargeableImages = document.querySelectorAll('.enlargeable-image');
+  enlargeableImages.forEach(img => {
+    img.addEventListener('click', (e) => {
+      const src = e.target.src;
+      showModal({
+        title: '檢視圖片',
+        content: `<div style="display:flex; justify-content:center; align-items:center; min-height: 200px;"><img src="${src}" style="max-width: 100%; max-height: 75vh; border-radius: 8px; object-fit: contain;" /></div>`,
+        width: '900px'
+      });
+    });
+  });
+
 }
 
 function formatDate(dateStr) {

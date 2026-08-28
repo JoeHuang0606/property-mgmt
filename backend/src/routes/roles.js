@@ -70,6 +70,47 @@ router.post('/', authorize('admin'), async (req, res) => {
 });
 
 /**
+ * PUT /api/roles/:id
+ * 修改職類（僅 admin）
+ */
+router.put('/:id', authorize('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, prefix } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: '請提供職類名稱' });
+    }
+
+    if (!prefix || !prefix.trim()) {
+      return res.status(400).json({ error: '請提供職類前綴' });
+    }
+
+    const cleanPrefix = prefix.trim();
+    if (!/^[A-Z0-9]+$/.test(cleanPrefix)) {
+      return res.status(400).json({ error: '職類前綴只能包含大寫英文與數字' });
+    }
+
+    const result = await pool.query(
+      'UPDATE custodian_roles SET name = $1, prefix = $2 WHERE id = $3 RETURNING id, name, prefix',
+      [name.trim(), cleanPrefix, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '職類不存在' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: '職類名稱已存在' });
+    }
+    console.error('修改職類錯誤:', err);
+    res.status(500).json({ error: '伺服器內部錯誤' });
+  }
+});
+
+/**
  * DELETE /api/roles/:id
  * 刪除職類（admin）
  */
