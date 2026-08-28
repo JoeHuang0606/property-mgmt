@@ -85,17 +85,109 @@ sudo docker compose up -d --build
 
 ### 常見錯誤與排除方式
 
-> 💡 **錯誤 1: `fatal: detected dubious ownership in repository`**
-> 此為 Git 的權限保護機制。請執行以下指令將專案目錄加入安全名單：
-> ```bash
-> git config --global --add safe.directory /opt/property-mgmt
-> ```
+---
 
-> 💡 **錯誤 2: `git stash pop` 發生 Conflict (衝突)**
-> 這代表官方的 `docker-compose.yml` 有更新，與您的修改發生衝突。您只需重新編輯 `nano docker-compose.yml`，把衝突標記 (`<<<<<<<`) 刪除，並確認密碼正確即可，然後再執行 `docker compose up -d --build`。
+#### ❌ 錯誤 1: Git — `fatal: detected dubious ownership in repository`
 
-> 💡 **資料會遺失嗎？**
-> **不會！** 您的資料庫 (`pgdata`) 和上傳的圖片 (`uploads_data`) 都已經被安全地掛載於 Docker Volumes。只要您沒有執行 `docker volume rm`，不論您更新或重啟容器多少次，帳號和財產資料都會完整保留！
+**原因**：Git 偵測到專案目錄的擁有者與當前執行使用者不同（例如用 `root` 操作但目錄歸屬其他使用者）。
+
+**解法**：將專案目錄加入 Git 安全名單：
+```bash
+git config --global --add safe.directory /opt/property-mgmt
+```
+
+---
+
+#### ❌ 錯誤 2: Git — `Your local changes would be overwritten by merge`
+
+**原因**：您在伺服器上修改過 `docker-compose.yml`（例如改了密碼），導致 `git pull` 無法自動合併。
+
+**解法**：用 `git stash` 暫存您的修改，拉取完再還原：
+```bash
+sudo git stash
+sudo git fetch --all
+sudo git reset --hard origin/main
+sudo git stash pop
+```
+
+> 💡 如果 `git stash pop` 出現 **Conflict（衝突）**，請執行 `nano docker-compose.yml`，手動刪除衝突標記（`<<<<<<<`、`=======`、`>>>>>>>`），確認密碼正確後儲存即可。
+
+---
+
+#### ❌ 錯誤 3: 後端容器不斷重啟 — `Restarting (1) X seconds ago`
+
+**原因**：後端伺服器啟動時無法連線到資料庫，最常見的原因是**密碼不一致**。
+
+**診斷方式**：查看後端日誌：
+```bash
+docker logs asset-mgmt-backend
+```
+
+如果看到 `password authentication failed for user "postgres"`，代表 `docker-compose.yml` 中的 `DB_PASSWORD`（後端用的密碼）跟 `POSTGRES_PASSWORD`（資料庫的密碼）不一致。
+
+**解法**：編輯 `docker-compose.yml`，確認以下兩個欄位的密碼**完全相同**：
+```yaml
+# db 服務底下：
+POSTGRES_PASSWORD: your_password    # ← 這兩個必須一樣
+
+# backend 服務底下：
+DB_PASSWORD: your_password          # ← 這兩個必須一樣
+```
+
+修改後重新啟動：
+```bash
+docker compose down
+docker compose up -d --build
+```
+
+> ⚠️ **重要**：PostgreSQL 只會在**第一次建立**資料庫時設定密碼。如果資料庫已經建立過，單純修改 `POSTGRES_PASSWORD` 不會改變已有的密碼。必須刪除 Volume 重建（見錯誤 5）。
+
+---
+
+#### ❌ 錯誤 4: 瀏覽器顯示 `502 Bad Gateway` 或 `請求失敗 (502)`
+
+**原因**：前端（Nginx）無法連線到後端 API。通常是因為後端容器正在重啟或尚未啟動完成。
+
+**診斷方式**：
+```bash
+docker ps
+```
+檢查 `asset-mgmt-backend` 的 STATUS 是否顯示 `Restarting`。如果是，請參考上方「錯誤 3」的解法。
+
+---
+
+#### ❌ 錯誤 5: 密碼怎麼改都沒用 — 需要完全重建資料庫
+
+**原因**：PostgreSQL 的密碼在第一次建立 Volume 時就固定了。之後不論怎麼修改 `docker-compose.yml` 的 `POSTGRES_PASSWORD`，都不會改變已經存在的資料庫密碼。
+
+**解法**：刪除舊的 Volume 並完全重建（⚠️ **此操作會清除所有資料**）：
+```bash
+# 1. 停止所有容器
+docker compose down
+
+# 2. 查看目前的 Volume
+docker volume ls
+
+# 3. 刪除資料庫 Volume（名稱通常是 property-mgmt_pgdata）
+docker volume rm property-mgmt_pgdata
+
+# 4. 確認 docker-compose.yml 密碼設定一致後，重新啟動
+docker compose up -d --build
+```
+
+> 💡 如果 `docker compose down -v` 沒有成功刪除 Volume，請用 `docker volume rm` 手動刪除。
+
+---
+
+#### 💡 資料會遺失嗎？
+
+**一般更新不會！** 您的資料庫（`pgdata`）和上傳的圖片（`uploads_data`）都被安全地掛載於 Docker Volumes。只要您**沒有**執行 `docker volume rm` 或 `docker compose down -v`，不論更新或重啟多少次，帳號和財產資料都會完整保留。
+
+| 指令 | 資料是否保留 |
+|------|:-:|
+| `docker compose down` → `docker compose up -d --build` | ✅ 保留 |
+| `docker compose down -v` | ❌ **全部清除** |
+| `docker volume rm property-mgmt_pgdata` | ❌ **資料庫清除** |
 
 ---
 
