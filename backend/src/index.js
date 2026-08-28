@@ -95,6 +95,7 @@ async function initializeDatabase() {
     try {
       await client.query("ALTER TABLE categories ADD COLUMN IF NOT EXISTS prefix VARCHAR(10) NOT NULL DEFAULT 'CAT'");
       await client.query("ALTER TABLE custodian_roles ADD COLUMN IF NOT EXISTS prefix VARCHAR(10) NOT NULL DEFAULT 'ROLE'");
+      await client.query("ALTER TABLE asset_custody_history ADD COLUMN IF NOT EXISTS return_photo TEXT");
     } catch (e) {
       console.error('更新資料庫結構時發生錯誤:', e);
     }
