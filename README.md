@@ -144,6 +144,52 @@ cat backup.sql | docker exec -i asset-mgmt-db psql -U postgres -d asset_manageme
 
 ---
 
+## 🌐 網域與反向代理 (Cloudflare)
+
+如果您希望將系統上線並綁定自己的網域，強烈建議使用 **Cloudflare Tunnels (Zero Trust)**。這不需要在防火牆開 Port，且自動提供 HTTPS 加密。
+
+### 推薦方式：Cloudflare Tunnels (`cloudflared`)
+
+1. 前往 [Cloudflare Zero Trust](https://one.dash.cloudflare.com/) 控制台。
+2. 進入 **Networks > Tunnels**，點擊 **Create a tunnel**。
+3. 選擇 **Cloudflared**，為 Tunnel 命名（例如 `property-mgmt`）。
+4. 選擇您的作業系統 (Debian/Ubuntu)，複製安裝指令並在伺服器上執行。
+5. 安裝完成後，在 Cloudflare 控制台設定 **Public Hostname**：
+   - **Subdomain**: `assets`
+   - **Domain**: `您的網域.com`
+   - **Service Type**: `HTTP`
+   - **URL**: `localhost:4173` (指向您的前端)
+6. 點擊 **Save**，即可透過 `https://assets.您的網域.com` 安全訪問系統！
+
+### 替代方式：傳統 Nginx 反向代理
+
+如果您偏好傳統方式，可使用 Nginx 並搭配 Cloudflare 的 DNS 代理 (橘色雲朵)：
+
+1. 安裝 Nginx：`sudo apt install nginx`
+2. 新增設定檔：`sudo nano /etc/nginx/sites-available/property-mgmt`
+```nginx
+server {
+    listen 80;
+    server_name assets.yourdomain.com;
+
+    location / {
+        proxy_pass http://localhost:4173;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+3. 啟用設定：
+```bash
+sudo ln -s /etc/nginx/sites-available/property-mgmt /etc/nginx/sites-enabled/
+sudo systemctl restart nginx
+```
+4. 確保 Cloudflare DNS 紀錄有開啟 Proxy (橘色雲朵)，即可獲得 HTTPS。
+
+---
+
 ## 🔧 環境變數
 
 您可以在 `docker-compose.yml` 或是後端的 `.env` 中修改以下變數：
