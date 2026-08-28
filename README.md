@@ -1,6 +1,6 @@
-# 📦 財產管理系統 (Property Management System) v1.2.0
+# 📦 財產管理系統 (Property Management System) v1.2.1
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
 ![Node](https://img.shields.io/badge/node-v20+-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgres-16-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
