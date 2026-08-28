@@ -56,14 +56,14 @@ function renderDetail(a, history = []) {
   let historyHtml = '';
   if (history.length > 0) {
     historyHtml = `
-      <div class="table-wrap" style="margin-top: 24px;">
+      <div class="table-wrap" style="display: flex; flex-direction: column; flex: 1;">
         <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-glass);">
           <h3 class="card-title" style="margin: 0; display:flex; align-items:center; gap:8px;">
             <span class="material-icons-round" style="color:var(--primary-light);">history</span>
             保管歷史紀錄
           </h3>
         </div>
-        <div class="mobile-card-table" style="max-height: 400px; overflow-y: auto;">
+        <div style="max-height: 400px; overflow-y: auto;">
           <table>
             <thead>
               <tr>
@@ -87,12 +87,12 @@ function renderDetail(a, history = []) {
     `;
   } else {
     historyHtml = `
-      <div class="card">
+      <div class="card" style="display: flex; flex-direction: column; flex: 1;">
         <h3 class="card-title" style="margin-bottom: 20px; display:flex; align-items:center; gap:8px;">
           <span class="material-icons-round" style="color:var(--primary-light);">history</span>
           保管歷史紀錄
         </h3>
-        <div class="empty-state" style="padding: 32px 0;">
+        <div class="empty-state" style="padding: 32px 0; flex: 1;">
           <span class="material-icons-round">inbox</span>
           <div class="empty-state-desc">尚無歷史紀錄</div>
         </div>
@@ -126,137 +126,144 @@ function renderDetail(a, history = []) {
       </div>
     </div>
 
-    <div class="asset-detail-grid" style="grid-template-columns: 2.5fr 1fr;">
-      <!-- 第一列：財產資訊與 QR Code -->
-      <div class="card">
-        <h3 class="card-title" style="margin-bottom:20px;">財產資訊</h3>
-        <div class="info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
-          <div class="detail-field">
-            <div class="detail-label">名稱</div>
-            <div class="detail-value">${a.name}</div>
-          </div>
-          <div class="detail-field">
-            <div class="detail-label">編號</div>
-            <div class="detail-value"><code style="color:var(--primary-light);">${a.assetCode}</code></div>
-          </div>
-          <div class="detail-field">
-            <div class="detail-label">分類</div>
-            <div class="detail-value">${a.categoryName || '-'}</div>
-          </div>
-          <div class="detail-field">
-            <div class="detail-label">存放位置</div>
-            <div class="detail-value">${a.location || '-'}</div>
-          </div>
-          <div class="detail-field">
-            <div class="detail-label">保管人</div>
-            <div class="detail-value" style="font-weight:600;">${a.custodian}</div>
-          </div>
-          <div class="detail-field">
-            <div class="detail-label">擁有職類</div>
-            <div class="detail-value">${a.custodianRoleName || '-'}</div>
-          </div>
-          <div class="detail-field">
-            <div class="detail-label">保管日期</div>
-            <div class="detail-value">${formatDate(a.custodyDate)}</div>
-          </div>
-          <div class="detail-field">
-            <div class="detail-label">歸還日期</div>
-            <div class="detail-value">${a.returnDate ? formatDate(a.returnDate) : '未設定'}</div>
-          </div>
-          <div class="detail-field">
-            <div class="detail-label">描述</div>
-            <div class="detail-value">${a.description || '無描述'}</div>
-          </div>
-          <div class="detail-field"></div>
-          <div class="detail-field">
-            <div class="detail-label">建立者</div>
-            <div class="detail-value">${a.creatorName || '-'}</div>
-          </div>
-          <div class="detail-field">
-            <div class="detail-label">建立時間</div>
-            <div class="detail-value">${formatDateTime(a.createdAt)}</div>
+    <div class="asset-detail-layout" style="display: flex; gap: 24px; flex-wrap: wrap; align-items: stretch;">
+      
+      <!-- 第一列：財產資訊與財產照片 (Left Column) -->
+      <div style="flex: 2.5; display: flex; flex-direction: column; gap: 24px; min-width: 300px;">
+        
+        <div class="card" style="display: flex; flex-direction: column; flex: 1;">
+          <h3 class="card-title" style="margin-bottom:20px;">財產資訊</h3>
+          <div class="info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+            <div class="detail-field">
+              <div class="detail-label">名稱</div>
+              <div class="detail-value">${a.name}</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-label">編號</div>
+              <div class="detail-value"><code style="color:var(--primary-light);">${a.assetCode}</code></div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-label">分類</div>
+              <div class="detail-value">${a.categoryName || '-'}</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-label">存放位置</div>
+              <div class="detail-value">${a.location || '-'}</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-label">保管人</div>
+              <div class="detail-value" style="font-weight:600;">${a.custodian}</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-label">擁有職類</div>
+              <div class="detail-value">${a.custodianRoleName || '-'}</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-label">保管日期</div>
+              <div class="detail-value">${formatDate(a.custodyDate)}</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-label">歸還日期</div>
+              <div class="detail-value">${a.returnDate ? formatDate(a.returnDate) : '未設定'}</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-label">描述</div>
+              <div class="detail-value">${a.description || '無描述'}</div>
+            </div>
+            <div class="detail-field"></div>
+            <div class="detail-field">
+              <div class="detail-label">建立者</div>
+              <div class="detail-value">${a.creatorName || '-'}</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-label">建立時間</div>
+              <div class="detail-value">${formatDateTime(a.createdAt)}</div>
+            </div>
           </div>
         </div>
+
+        <div class="card" style="display: flex; flex-direction: column; flex: 1;">
+          <h3 class="card-title" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+            <div><span class="material-icons-round" style="color:var(--primary-light); vertical-align:middle;">image</span> 財產照片</div>
+          </h3>
+          
+          ${a.imageUrl ? `
+            <div style="margin-bottom: 24px;">
+              <div class="detail-label" style="margin-bottom: 8px;">主要照片</div>
+              <img src="/api/uploads/${a.imageUrl}" class="enlargeable-image" alt="Main Photo" style="max-width: 100%; border-radius: 8px; max-height: 400px; object-fit: cover; width: 100%; background: var(--bg-surface); cursor: pointer;" />
+            </div>
+          ` : `
+            <div style="margin-bottom: 24px; flex: 1; display: flex; flex-direction: column;">
+              <div class="detail-label" style="margin-bottom: 8px;">主要照片</div>
+              <div style="width:100%; min-height: 300px; flex: 1; background:var(--bg-secondary); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">
+                <span class="material-icons-round" style="font-size:64px;">image_not_supported</span>
+              </div>
+            </div>
+          `}
+          
+          ${history && history.find(h => h.returnPhoto) ? `
+            <div style="margin-bottom: 24px;">
+              <div class="detail-label" style="margin-bottom: 8px;">最後歸還照片</div>
+              <img src="/api/uploads/${history.find(h => h.returnPhoto).returnPhoto}" class="enlargeable-image" alt="Return Photo" style="max-width: 100%; border-radius: 8px; max-height: 400px; object-fit: cover; width: 100%; background: var(--bg-surface); cursor: pointer;" />
+            </div>
+          ` : ''}
+
+          <div class="detail-label" style="margin-bottom: 8px;">詳情圖片 (${a.detailPhotos ? a.detailPhotos.length : 0})</div>
+          ${a.detailPhotos && a.detailPhotos.length > 0 ? `
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
+              ${a.detailPhotos.map(p => `
+                <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border-glass);">
+                  <img src="/api/uploads/${p.url}" class="enlargeable-image" alt="Detail Photo" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" />
+                </div>
+              `).join('')}
+            </div>
+          ` : '<p style="color:var(--text-muted);">無詳情圖片</p>'}
+        </div>
+      </div>
+
+      <!-- 第二列：QR Code 與歷史紀錄 (Right Column) -->
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 24px; min-width: 300px;">
+        
+        <div class="card" style="display: flex; flex-direction: column;">
+          <h3 class="card-title" style="margin-bottom:16px;text-align:center;">QR Code</h3>
+          <div class="qr-display" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+            ${a.qrCode ? `
+              <img src="${a.qrCode}" alt="QR Code: ${a.assetCode}" id="qr-img" style="background: white; padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 16px;" />
+              <div style="font-family: monospace; color: var(--primary-light); text-align: center; margin-bottom: 16px; letter-spacing: 1px;">${a.assetCode}</div>
+              <div style="margin-top:auto;display:flex;gap:12px;justify-content:center;">
+                <button class="btn btn-sm" id="btn-download-qr" style="border: 1px solid var(--border-glass); background: transparent; border-radius: 20px; padding: 6px 16px;">
+                  <span class="material-icons-round" style="font-size: 18px;">download</span>
+                  下載
+                </button>
+                <button class="btn btn-sm" id="btn-print-qr" style="border: 1px solid var(--border-glass); background: transparent; border-radius: 20px; padding: 6px 16px;">
+                  <span class="material-icons-round" style="font-size: 18px;">print</span>
+                  列印
+                </button>
+              </div>
+              
+              ${canTakeCustody ? `
+                <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
+                  <button class="btn btn-primary" id="btn-take-custody" data-id="${a.id}" style="width: 100%;">
+                    <span class="material-icons-round">pan_tool</span>
+                    領取保管
+                  </button>
+                </div>
+              ` : ''}
+              ${canReturn ? `
+                <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
+                  <button class="btn btn-accent" id="btn-return-asset" data-id="${a.id}" style="width: 100%;">
+                    <span class="material-icons-round">assignment_return</span>
+                    確認歸還
+                  </button>
+                </div>
+              ` : ''}
+            ` : '<p style="color:var(--text-muted); text-align:center;">無 QR Code</p>'}
+          </div>
+        </div>
+
+        ${historyHtml}
       </div>
       
-      <div class="card">
-        <h3 class="card-title" style="margin-bottom:16px;text-align:center;">QR Code</h3>
-        <div class="qr-display">
-          ${a.qrCode ? `
-            <img src="${a.qrCode}" alt="QR Code: ${a.assetCode}" id="qr-img" style="background: white; padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 16px;" />
-            <div style="font-family: monospace; color: var(--primary-light); text-align: center; margin-bottom: 16px; letter-spacing: 1px;">${a.assetCode}</div>
-            <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;">
-              <button class="btn btn-sm" id="btn-download-qr" style="border: 1px solid var(--border-glass); background: transparent; border-radius: 20px; padding: 6px 16px;">
-                <span class="material-icons-round" style="font-size: 18px;">download</span>
-                下載
-              </button>
-              <button class="btn btn-sm" id="btn-print-qr" style="border: 1px solid var(--border-glass); background: transparent; border-radius: 20px; padding: 6px 16px;">
-                <span class="material-icons-round" style="font-size: 18px;">print</span>
-                列印
-              </button>
-            </div>
-            
-            ${canTakeCustody ? `
-              <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
-                <button class="btn btn-primary" id="btn-take-custody" data-id="${a.id}" style="width: 100%;">
-                  <span class="material-icons-round">pan_tool</span>
-                  領取保管
-                </button>
-              </div>
-            ` : ''}
-            ${canReturn ? `
-              <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
-                <button class="btn btn-accent" id="btn-return-asset" data-id="${a.id}" style="width: 100%;">
-                  <span class="material-icons-round">assignment_return</span>
-                  確認歸還
-                </button>
-              </div>
-            ` : ''}
-          ` : '<p style="color:var(--text-muted);">無 QR Code</p>'}
-        </div>
-      </div>
-
-      <!-- 第二列：財產照片與歷史紀錄 -->
-      <div class="card">
-        <h3 class="card-title" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
-          <div><span class="material-icons-round" style="color:var(--primary-light); vertical-align:middle;">image</span> 財產照片</div>
-        </h3>
-        
-        ${a.imageUrl ? `
-          <div style="margin-bottom: 24px;">
-            <div class="detail-label" style="margin-bottom: 8px;">主要照片</div>
-            <img src="/api/uploads/${a.imageUrl}" class="enlargeable-image" alt="Main Photo" style="max-width: 100%; border-radius: 8px; max-height: 400px; object-fit: contain; background: var(--bg-surface); cursor: pointer;" />
-          </div>
-        ` : `
-          <div style="margin-bottom: 24px;">
-            <div class="detail-label" style="margin-bottom: 8px;">主要照片</div>
-            <div style="width:100%; height:300px; background:var(--bg-secondary); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">
-              <span class="material-icons-round" style="font-size:64px;">image_not_supported</span>
-            </div>
-          </div>
-        `}
-        
-        ${history && history.find(h => h.returnPhoto) ? `
-          <div style="margin-bottom: 24px;">
-            <div class="detail-label" style="margin-bottom: 8px;">最後歸還照片</div>
-            <img src="/api/uploads/${history.find(h => h.returnPhoto).returnPhoto}" class="enlargeable-image" alt="Return Photo" style="max-width: 100%; border-radius: 8px; max-height: 400px; object-fit: contain; background: var(--bg-surface); cursor: pointer;" />
-          </div>
-        ` : ''}
-
-        <div class="detail-label" style="margin-bottom: 8px;">詳情圖片 (${a.detailPhotos ? a.detailPhotos.length : 0})</div>
-        ${a.detailPhotos && a.detailPhotos.length > 0 ? `
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
-            ${a.detailPhotos.map(p => `
-              <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border-glass);">
-                <img src="/api/uploads/${p.url}" class="enlargeable-image" alt="Detail Photo" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" />
-
-              </div>
-            `).join('')}
-          </div>
-        ` : '<p style="color:var(--text-muted);">無詳情圖片</p>'}
-      </div>
-
-      ${historyHtml}
     </div>
   `;
 
@@ -327,7 +334,24 @@ function renderDetail(a, history = []) {
             <p style="color:var(--text-secondary); font-size:0.95rem;">歸還財產前，請上傳最新的現況照片（必填）。</p>
             <div class="form-group">
               <label>上傳歸還照片 <span style="color:var(--danger);">*</span></label>
-              <input type="file" id="return-photo-input" accept="image/*" class="form-control" />
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('return-photo-input').removeAttribute('capture'); document.getElementById('return-photo-input').click();" style="flex:1;">
+                  <span class="material-icons-round" style="font-size:1.2rem; margin-right:4px;">photo_library</span> 相簿選擇
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('return-photo-input').setAttribute('capture', 'environment'); document.getElementById('return-photo-input').click();" style="flex:1;">
+                  <span class="material-icons-round" style="font-size:1.2rem; margin-right:4px;">photo_camera</span> 開啟相機
+                </button>
+              </div>
+              <input type="file" id="return-photo-input" accept="image/*" style="display:none;" onchange="
+                const nameSpan = document.getElementById('return-photo-name');
+                if(this.files.length > 0) {
+                  nameSpan.textContent = '已選擇: ' + this.files[0].name;
+                  nameSpan.style.display = 'block';
+                } else {
+                  nameSpan.style.display = 'none';
+                }
+              " />
+              <div id="return-photo-name" style="margin-top:8px; font-size:0.85rem; color:var(--primary); display:none;"></div>
             </div>
           </div>
         `;
