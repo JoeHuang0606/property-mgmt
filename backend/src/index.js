@@ -91,6 +91,14 @@ async function initializeDatabase() {
 
     await client.query(sqlWithoutAdminInsert);
 
+    // 檢查並新增 categories 與 custodian_roles 的 prefix 欄位 (向下相容舊資料庫)
+    try {
+      await client.query("ALTER TABLE categories ADD COLUMN IF NOT EXISTS prefix VARCHAR(10) NOT NULL DEFAULT 'CAT'");
+      await client.query("ALTER TABLE custodian_roles ADD COLUMN IF NOT EXISTS prefix VARCHAR(10) NOT NULL DEFAULT 'ROLE'");
+    } catch (e) {
+      console.error('更新資料庫結構時發生錯誤:', e);
+    }
+
     // 檢查是否已有 admin 帳號
     const adminCheck = await client.query(
       "SELECT id FROM users WHERE username = 'admin'"
