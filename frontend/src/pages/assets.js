@@ -32,7 +32,7 @@ export default async function assetsPage() {
               ${isManager() ? `
                 <button class="btn btn-secondary" id="btn-export-qrcodes" disabled>
                   <span class="material-icons-round">qr_code_scanner</span>
-                  <span>掃描 QR CODE (0)</span>
+                  <span>匯出 QR CODE (0)</span>
                 </button>
                 <button class="btn btn-danger" id="btn-bulk-delete" disabled>
                   <span class="material-icons-round">delete</span>
@@ -133,11 +133,11 @@ export default async function assetsPage() {
   if (exportBtn) {
     exportBtn.addEventListener('click', async () => {
       if (selectedAssetIds.size === 0) return;
-      
+
       exportBtn.disabled = true;
       const originalText = exportBtn.innerHTML;
       exportBtn.innerHTML = '<span class="material-icons-round spin">sync</span> 匯出中...';
-      
+
       try {
         await assetsAPI.exportQRCodes(Array.from(selectedAssetIds));
         showToast('匯出成功！', 'success');
@@ -154,7 +154,7 @@ export default async function assetsPage() {
   if (bulkDeleteBtn) {
     bulkDeleteBtn.addEventListener('click', async () => {
       if (selectedAssetIds.size === 0) return;
-      
+
       showConfirm({
         title: '刪除財產',
         message: `確定要刪除選取的 ${selectedAssetIds.size} 筆財產嗎？此操作無法復原。`,
@@ -164,7 +164,7 @@ export default async function assetsPage() {
           bulkDeleteBtn.disabled = true;
           const originalText = bulkDeleteBtn.innerHTML;
           bulkDeleteBtn.innerHTML = '<span class="material-icons-round spin">sync</span> 刪除中...';
-          
+
           try {
             const ids = Array.from(selectedAssetIds);
             for (const id of ids) {
@@ -191,12 +191,12 @@ export default async function assetsPage() {
 function updateExportButton() {
   const exportBtn = document.getElementById('btn-export-qrcodes');
   const deleteBtn = document.getElementById('btn-bulk-delete');
-  
+
   if (exportBtn) {
-    exportBtn.querySelector('span:last-child').textContent = `掃描 QR CODE (${selectedAssetIds.size})`;
+    exportBtn.querySelector('span:last-child').textContent = `匯出 QR CODE (${selectedAssetIds.size})`;
     exportBtn.disabled = selectedAssetIds.size === 0;
   }
-  
+
   if (deleteBtn) {
     deleteBtn.querySelector('span:last-child').textContent = `刪除 (${selectedAssetIds.size})`;
     deleteBtn.disabled = selectedAssetIds.size === 0;
@@ -248,12 +248,12 @@ async function loadAssets() {
           </thead>
           <tbody>
             ${data.data.map(a => {
-              const isChecked = selectedAssetIds.has(String(a.id)) ? 'checked' : '';
-              const currentUser = getUser();
-              const _canEdit = isAdmin() || (isManager() && (currentUser?.assignedRoles || []).includes(a.custodianRoleId));
-              const thumbHtml = a.thumbnailUrl ? `<img src="/api/uploads/${a.thumbnailUrl}" alt="thumbnail" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle;" />` : '';
-              
-              return `
+      const isChecked = selectedAssetIds.has(String(a.id)) ? 'checked' : '';
+      const currentUser = getUser();
+      const _canEdit = isAdmin() || (isManager() && (currentUser?.assignedRoles || []).includes(a.custodianRoleId));
+      const thumbHtml = a.thumbnailUrl ? `<img src="/api/uploads/${a.thumbnailUrl}" alt="thumbnail" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle;" />` : '';
+
+      return `
                 <tr class="${isChecked ? 'selected' : ''}">
                   ${canManage ? `<td data-label="選擇"><input type="checkbox" class="check-asset" value="${a.id}" ${isChecked} /></td>` : ''}
                   <td data-label="編號"><code style="font-size:0.8rem;color:var(--primary-light);">${a.assetCode}</code></td>
@@ -282,7 +282,7 @@ async function loadAssets() {
                   </td>
                 </tr>
               `;
-            }).join('')}
+    }).join('')}
           </tbody>
         </table>
       </div>

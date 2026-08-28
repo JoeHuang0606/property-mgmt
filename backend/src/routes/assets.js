@@ -632,7 +632,7 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
     }
 
     const result = await pool.query(
-      `SELECT id, asset_code, qr_code FROM assets WHERE id = ANY($1) ORDER BY asset_code ASC`,
+      `SELECT id, asset_code, name, qr_code FROM assets WHERE id = ANY($1) ORDER BY asset_code ASC`,
       [assetIds]
     );
 
@@ -643,11 +643,11 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('QR Codes');
 
-    sheet.getColumn('A').width = 10;
+    sheet.getColumn('A').width = 11;
     sheet.getColumn('B').width = 1.2;
-    sheet.getColumn('C').width = 10;
+    sheet.getColumn('C').width = 11;
     sheet.getColumn('D').width = 1.2;
-    sheet.getColumn('E').width = 10;
+    sheet.getColumn('E').width = 11;
 
     let rowIndex = 1;
     let colIndex = 1;
@@ -661,18 +661,18 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
         extension: 'png',
       });
 
-      sheet.getRow(rowIndex).height = 70; // 2cm大約是 57 points，預留13 points給下方的文字
+      sheet.getRow(rowIndex).height = 85; // 3cm 大約是 85 points
       sheet.getRow(rowIndex + 1).height = 3;
 
       sheet.addImage(imageId, {
         tl: { col: colIndex - 1, row: rowIndex - 1 },
-        ext: { width: 76, height: 76 } // 2cm = 75.59 pixels (96 DPI)
+        ext: { width: 76, height: 76 } // 2cm 大約是 76 pixels
       });
 
       const cell = sheet.getCell(rowIndex, colIndex);
-      cell.value = asset.asset_code;
-      cell.alignment = { vertical: 'bottom', horizontal: 'center' };
-      cell.font = { size: 10, bold: true };
+      cell.value = `${asset.asset_code}\n${asset.name}`;
+      cell.alignment = { vertical: 'bottom', horizontal: 'center', wrapText: true };
+      cell.font = { size: 9, bold: true };
 
       colIndex += 2;
       if (colIndex > 5) {
