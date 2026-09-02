@@ -1,0 +1,59 @@
+name: property-mgmt
+
+services:
+  # PostgreSQL 資料庫
+  db:
+    image: postgres:16-alpine
+    container_name: asset-mgmt-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: asset_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password_change_me
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 後端 API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: asset-mgmt-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres_password_change_me
+      DB_NAME: asset_management
+      JWT_SECRET: change_this_to_a_strong_random_string
+      JWT_EXPIRES_IN: 8h
+      PORT: 3000
+      FRONTEND_URL: http://localhost:4173
+    ports:
+      - "3000:3000"
+
+  # 前端
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: asset-mgmt-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "4173:80"
+
+volumes:
+  pgdata:

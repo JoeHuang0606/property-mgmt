@@ -1,0 +1,334 @@
+/**
+ * 新增/編輯財產表單頁面
+ */
+import { assetsAPI, categoriesAPI, usersAPI, rolesAPI } from '../api.js';
+import { showToast } from '../components/toast.js';
+import { showModal } from '../components/modal.js';
+import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
+import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
+import { isManager, isAdmin, getUser } from '../auth.js';
+import { navigate } from '../router.js';
+
+export default async function assetFormPage({ id } = {}) {
+  const isEdit = !!id && id !== 'new';
+  const app = document.getElementById('app');
+
+  app.innerHTML = `
+    <div class="layout">
+      ${renderSidebar()}
+      ${renderNavbar(isEdit ? '編輯財產' : '新增財產')}
+      <main class="layout-main">
+        <div class="page-content">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">${isEdit ? '編輯財產' : '新增財產'}</h2>
+              <p class="page-subtitle">${isEdit ? '修改財產資訊' : '建立新的財產紀錄'}</p>
+            </div>
+            <a href="#/assets" class="btn btn-ghost">
+              <span class="material-icons-round">arrow_back</span>
+              返回列表
+            </a>
+          </div>
+
+          <div class="card" style="max-width:800px;">
+            <form id="asset-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="name">名稱 *</label>
+                  <input type="text" class="form-input" id="name" placeholder="財產名稱" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="categoryId">分類 *</label>
+                  <div style="display:flex; gap:8px;">
+                    <select class="form-select" id="categoryId" required>
+                      <option value="">選擇分類</option>
+                    </select>
+                    ${isManager() ? `
+                      <button type="button" class="btn btn-ghost" id="btn-quick-add-category" title="新增分類">
+                        <span class="material-icons-round">add</span>
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="description">描述</label>
+                <textarea class="form-textarea" id="description" placeholder="財產描述（選填）"></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="custodian">保管人</label>
+                  <input type="text" class="form-input" id="custodian" readonly required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="custodianRoleId">擁有職類 *</label>
+                  <div style="display:flex; gap:8px;">
+                    <select class="form-select" id="custodianRoleId" required>
+                      <option value="">選擇職類</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="custodyDate">保管日期 *</label>
+                  <input type="date" class="form-input" id="custodyDate" required />
+                </div>
+                ${isEdit ? `
+                <div class="form-group">
+                  <label class="form-label" for="returnDate">歸還日期</label>
+                  <input type="date" class="form-input" id="returnDate" />
+                </div>
+                ` : `
+                <input type="hidden" id="returnDate" value="" />
+                `}
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="location">存放位置</label>
+                  <input type="text" class="form-input" id="location" placeholder="存放地點（選填）" />
+                </div>
+
+              </div>
+
+              <div style="display:flex;gap:12px;margin-top:12px;">
+                <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+                  <span class="material-icons-round">${isEdit ? 'save' : 'add_circle'}</span>
+                  ${isEdit ? '儲存變更' : '建立財產'}
+                </button>
+                <a href="#/assets" class="btn btn-ghost btn-lg">取消</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  `;
+
+  initSidebarEvents();
+  initNavbarEvents();
+
+  // 載入分類
+  const loadCategories = async () => {
+    try {
+      const categories = await categoriesAPI.list();
+      const catSelect = document.getElementById('categoryId');
+      const currentValue = catSelect.value;
+      catSelect.innerHTML = '<option value="">選擇分類</option>';
+      categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        catSelect.appendChild(opt);
+      });
+      if (currentValue) catSelect.value = currentValue;
+    } catch (err) {
+      // 忽略
+    }
+  };
+
+  const loadRoles = async () => {
+    try {
+      const roles = await rolesAPI.list();
+      const roleSelect = document.getElementById('custodianRoleId');
+      const currentValue = roleSelect.value;
+      roleSelect.innerHTML = '<option value="">選擇職類</option>';
+      
+      const user = getUser();
+      const isAdminUser = isAdmin();
+
+      roles.forEach(r => {
+        // If not admin and user is manager, only show assigned roles
+        if (!isAdminUser && user?.role === 'manager' && !(user.assignedRoles || []).includes(r.id)) {
+          return;
+        }
+        
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.name;
+        roleSelect.appendChild(opt);
+      });
+      if (currentValue) roleSelect.value = currentValue;
+    } catch (err) {
+      // 忽略
+    }
+  };
+
+  await Promise.all([loadCategories(), loadRoles()]);
+  const currentUser = getUser();
+  if (!isEdit && currentUser) {
+    document.getElementById('custodian').value = currentUser.displayName;
+  }
+
+  if (isManager()) {
+    const quickAddBtn = document.getElementById('btn-quick-add-category');
+    if (quickAddBtn) {
+      quickAddBtn.addEventListener('click', () => {
+        const body = document.createElement('div');
+        body.innerHTML =
+          '<div class="form-group">' +
+          '<label class="form-label">分類名稱 *</label>' +
+          '<input type="text" class="form-input" id="quick-category-name" placeholder="輸入分類名稱" />' +
+          '</div>' +
+          '<div class="form-group" style="margin-top:16px;">' +
+          '<label class="form-label">英文大寫前綴 *</label>' +
+          '<input type="text" class="form-input" id="quick-category-prefix" placeholder="例如：IT, FUR" style="text-transform:uppercase;" />' +
+          '</div>';
+
+        const footer = document.createElement('div');
+        footer.innerHTML = `
+          <button class="btn btn-ghost" id="quick-cat-cancel">取消</button>
+          <button class="btn btn-primary" id="quick-cat-save">建立</button>
+        `;
+
+        const { close } = showModal({
+          title: '新增分類',
+          content: body,
+          footer,
+        });
+
+        document.getElementById('quick-cat-cancel').addEventListener('click', close);
+        
+        const saveBtn = document.getElementById('quick-cat-save');
+        saveBtn.addEventListener('click', async () => {
+          const name = document.getElementById('quick-category-name').value.trim();
+          const prefix = document.getElementById('quick-category-prefix').value.trim().toUpperCase();
+          if (!name || !prefix) return showToast('請填寫分類名稱與前綴', 'warning');
+
+          try {
+            saveBtn.disabled = true;
+            saveBtn.textContent = '處理中...';
+            const newCat = await categoriesAPI.create({ name, prefix });
+            showToast('分類已建立', 'success');
+            await loadCategories();
+            document.getElementById('categoryId').value = newCat.id;
+            close();
+          } catch (err) {
+            showToast(err.message, 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = '建立';
+          }
+        });
+      });
+    }
+
+    const quickAddRoleBtn = document.getElementById('btn-quick-add-role');
+    if (quickAddRoleBtn && isAdmin()) {
+      quickAddRoleBtn.addEventListener('click', () => {
+        const body = document.createElement('div');
+        body.innerHTML =
+          '<div class="form-group">' +
+          '<label class="form-label">職類名稱 *</label>' +
+          '<input type="text" class="form-input" id="quick-role-name" placeholder="輸入職類名稱（如：教師、學生）" />' +
+          '</div>';
+
+        const footer = document.createElement('div');
+        footer.innerHTML = `
+          <button class="btn btn-ghost" id="quick-role-cancel">取消</button>
+          <button class="btn btn-primary" id="quick-role-save">建立</button>
+        `;
+
+        const { close } = showModal({
+          title: '新增職類',
+          content: body,
+          footer,
+        });
+
+        document.getElementById('quick-role-cancel').addEventListener('click', close);
+        
+        const saveBtn = document.getElementById('quick-role-save');
+        saveBtn.addEventListener('click', async () => {
+          const name = document.getElementById('quick-role-name').value.trim();
+          if (!name) return showToast('請填寫職類名稱', 'warning');
+          
+          try {
+            saveBtn.disabled = true;
+            saveBtn.textContent = '處理中...';
+            const newRole = await rolesAPI.create({ name });
+            showToast('職類已建立', 'success');
+            await loadRoles();
+            document.getElementById('custodianRoleId').value = newRole.id;
+            close();
+          } catch (err) {
+            showToast(err.message, 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = '建立';
+          }
+        });
+      });
+    }
+  }
+
+  // 若為編輯模式，載入現有資料
+  if (isEdit) {
+    try {
+      const asset = await assetsAPI.get(id);
+      document.getElementById('name').value = asset.name || '';
+      document.getElementById('description').value = asset.description || '';
+      document.getElementById('custodian').value = asset.custodian || '';
+      if (asset.custodianRoleId) document.getElementById('custodianRoleId').value = asset.custodianRoleId;
+      document.getElementById('custodyDate').value = asset.custodyDate ? asset.custodyDate.slice(0, 10) : '';
+      document.getElementById('returnDate').value = asset.returnDate ? asset.returnDate.slice(0, 10) : '';
+      document.getElementById('location').value = asset.location || '';
+      if (asset.categoryId) document.getElementById('categoryId').value = asset.categoryId;
+      if (asset.custodian) document.getElementById('custodian').value = asset.custodian;
+
+    } catch (err) {
+      showToast('載入財產資料失敗: ' + err.message, 'error');
+      return;
+    }
+  } else {
+    // 預設保管日期為今天
+    document.getElementById('custodyDate').value = new Date().toISOString().slice(0, 10);
+  }
+
+  // 表單提交
+  const form = document.getElementById('asset-form');
+  const submitBtn = document.getElementById('submit-btn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = {
+      name: document.getElementById('name').value.trim(),
+      description: document.getElementById('description').value.trim(),
+      categoryId: document.getElementById('categoryId').value || null,
+      custodian: document.getElementById('custodian').value.trim(),
+      custodianRoleId: document.getElementById('custodianRoleId').value || null,
+      custodyDate: document.getElementById('custodyDate').value,
+      returnDate: document.getElementById('returnDate').value || null,
+      location: document.getElementById('location').value.trim(),
+    };
+
+
+
+    if (!formData.name || !formData.custodian || !formData.custodianRoleId || !formData.custodyDate) {
+      showToast('請填寫必要欄位', 'warning');
+      return;
+    }
+
+    try {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="material-icons-round">hourglass_empty</span> 處理中...';
+
+      if (isEdit) {
+        await assetsAPI.update(id, formData);
+        showToast('財產已更新', 'success');
+        navigate(`/ assets / ${id} `);
+      } else {
+        const result = await assetsAPI.create(formData);
+        showToast('財產已建立', 'success');
+        navigate(`/ assets / ${result.id} `);
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<span class="material-icons-round">' + (isEdit ? 'save' : 'add_circle') + '</span> ' + (isEdit ? '儲存變更' : '建立財產');
+    }
+  });
+}
