@@ -643,10 +643,10 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('QR Codes');
 
-    // 7 items per row (13 columns: 7 for items, 6 for spacing)
-    for (let c = 1; c <= 13; c++) {
+    // 8 items per row (8 columns, no spacing)
+    for (let c = 1; c <= 8; c++) {
       const colLetter = String.fromCharCode(64 + c);
-      sheet.getColumn(colLetter).width = (c % 2 !== 0) ? 11 : 1.2;
+      sheet.getColumn(colLetter).width = 11;
     }
 
     let rowIndex = 1;
@@ -662,7 +662,6 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
       });
 
       sheet.getRow(rowIndex).height = 85; // 3cm 大約是 85 points
-      sheet.getRow(rowIndex + 1).height = 3;
 
       sheet.addImage(imageId, {
         tl: { col: colIndex - 1, row: rowIndex - 1 },
@@ -674,10 +673,10 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
       cell.alignment = { vertical: 'bottom', horizontal: 'center', wrapText: true };
       cell.font = { size: 9, bold: true };
 
-      colIndex += 2;
-      if (colIndex > 13) {
+      colIndex += 1;
+      if (colIndex > 8) {
         colIndex = 1;
-        rowIndex += 2;
+        rowIndex += 1;
       }
     }
 
