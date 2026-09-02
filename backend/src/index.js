@@ -57,6 +57,9 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// 提供靜態圖片
+app.use('/api/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
 // 404
 app.use('/api/*', (req, res) => {
   res.status(404).json({ error: '端點不存在' });

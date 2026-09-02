@@ -70,6 +70,47 @@ router.post('/', authorize('admin', 'manager'), async (req, res) => {
 });
 
 /**
+ * PUT /api/categories/:id
+ * 修改分類（admin / manager）
+ */
+router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, prefix } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: '請提供分類名稱' });
+    }
+
+    if (!prefix || !prefix.trim()) {
+      return res.status(400).json({ error: '請提供分類前綴' });
+    }
+
+    const cleanPrefix = prefix.trim().toUpperCase();
+    if (!/^[A-Z]+$/.test(cleanPrefix)) {
+      return res.status(400).json({ error: '分類前綴只能包含大寫英文' });
+    }
+
+    const result = await pool.query(
+      'UPDATE categories SET name = $1, prefix = $2 WHERE id = $3 RETURNING id, name, prefix',
+      [name.trim(), cleanPrefix, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '分類不存在' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: '分類名稱已存在' });
+    }
+    console.error('修改分類錯誤:', err);
+    res.status(500).json({ error: '伺服器內部錯誤' });
+  }
+});
+
+/**
  * DELETE /api/categories/:id
  * 刪除分類（admin）
  */

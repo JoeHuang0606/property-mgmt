@@ -92,7 +92,22 @@ export default async function assetFormPage({ id } = {}) {
                   <label class="form-label" for="location">存放位置</label>
                   <input type="text" class="form-input" id="location" placeholder="存放地點（選填）" />
                 </div>
+                <div class="form-group">
+                  <label class="form-label" for="image">主要照片</label>
+                  <input type="file" class="form-input" id="image" accept="image/*" />
+                  <div id="image-preview-container" style="margin-top:8px; display:none;">
+                    <img id="image-preview" style="max-width: 100px; max-height: 100px; border-radius: 4px;" />
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 8px;">已選擇主要照片與縮圖</span>
+                  </div>
+                </div>
+              </div>
 
+              <div class="form-row">
+                <div class="form-group" style="width: 100%;">
+                  <label class="form-label" for="detailPhotos">上傳詳情圖片</label>
+                  <input type="file" class="form-input" id="detailPhotos" accept="image/*" multiple />
+                  <div id="existing-detail-photos" style="margin-top:16px; display:none; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px;"></div>
+                </div>
               </div>
 
               <div style="display:flex;gap:12px;margin-top:12px;">
@@ -111,6 +126,79 @@ export default async function assetFormPage({ id } = {}) {
 
   initSidebarEvents();
   initNavbarEvents();
+
+  let selectedImageFile = null;
+  let croppedThumbnailBlob = null;
+  let cropperInstance = null;
+
+  // 處理主要照片選擇與裁切
+  const imageInput = document.getElementById('image');
+  imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    selectedImageFile = file;
+
+    // 建立裁切 Modal
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imgUrl = event.target.result;
+      const body = document.createElement('div');
+      body.innerHTML = `
+        <div style="max-height: 400px; text-align: center;">
+          <img id="cropper-image" src="${imgUrl}" style="max-width: 100%; display: block;" />
+        </div>
+        <p style="margin-top: 12px; font-size: 0.9rem; color: var(--text-muted);">請拖曳調整以選取 1x1 的列表縮圖範圍</p>
+      `;
+
+      const footer = document.createElement('div');
+      footer.innerHTML = `
+        <button class="btn btn-ghost" id="cropper-cancel">取消</button>
+        <button class="btn btn-primary" id="cropper-save">確認裁切</button>
+      `;
+
+      const { close } = showModal({
+        title: '裁切縮圖',
+        content: body,
+        footer,
+      });
+
+      const imageElement = document.getElementById('cropper-image');
+      cropperInstance = new Cropper(imageElement, {
+        aspectRatio: 1,
+        viewMode: 1,
+        autoCropArea: 0.8,
+      });
+
+      document.getElementById('cropper-cancel').addEventListener('click', () => {
+        if (cropperInstance) cropperInstance.destroy();
+        imageInput.value = '';
+        selectedImageFile = null;
+        croppedThumbnailBlob = null;
+        close();
+      });
+
+      document.getElementById('cropper-save').addEventListener('click', () => {
+        const canvas = cropperInstance.getCroppedCanvas({
+          width: 200,
+          height: 200,
+        });
+        canvas.toBlob((blob) => {
+          croppedThumbnailBlob = blob;
+          // 顯示預覽
+          const previewContainer = document.getElementById('image-preview-container');
+          const previewImg = document.getElementById('image-preview');
+          previewImg.src = canvas.toDataURL();
+          previewContainer.style.display = 'flex';
+          previewContainer.style.alignItems = 'center';
+          
+          if (cropperInstance) cropperInstance.destroy();
+          close();
+        }, 'image/jpeg', 0.8);
+      });
+    };
+    reader.readAsDataURL(file);
+  });
 
   // 載入分類
   const loadCategories = async () => {
@@ -276,6 +364,52 @@ export default async function assetFormPage({ id } = {}) {
       document.getElementById('location').value = asset.location || '';
       if (asset.categoryId) document.getElementById('categoryId').value = asset.categoryId;
       if (asset.custodian) document.getElementById('custodian').value = asset.custodian;
+      
+      if (asset.thumbnailUrl) {
+        const previewContainer = document.getElementById('image-preview-container');
+        const previewImg = document.getElementById('image-preview');
+        previewImg.src = `/api/uploads/${asset.thumbnailUrl}`;
+        previewContainer.style.display = 'flex';
+        previewContainer.style.alignItems = 'center';
+      }
+
+      if (asset.detailPhotos && asset.detailPhotos.length > 0) {
+        const detailPhotosContainer = document.getElementById('existing-detail-photos');
+        detailPhotosContainer.style.display = 'grid';
+        detailPhotosContainer.innerHTML = asset.detailPhotos.map(p => `
+          <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border-glass);">
+            <img src="/api/uploads/${p.url}" alt="Detail Photo" style="width: 100%; height: 100%; object-fit: cover;" />
+            <button type="button" class="icon-btn danger btn-delete-photo" data-photo-id="${p.id}" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.5); color: #fff; width: 28px; height: 28px; border-radius: 14px; display: flex; align-items: center; justify-content: center; padding: 0;">
+              <span class="material-icons-round" style="font-size: 16px;">delete</span>
+            </button>
+          </div>
+        `).join('');
+
+        // Attach event listeners for delete
+        detailPhotosContainer.querySelectorAll('.btn-delete-photo').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const photoId = e.currentTarget.dataset.photoId;
+            showConfirm({
+              title: '刪除圖片',
+              message: '確定要刪除這張照片嗎？',
+              danger: true,
+              confirmText: '刪除',
+              onConfirm: async () => {
+                try {
+                  await assetsAPI.deleteDetailPhoto(id, photoId);
+                  showToast('照片已刪除', 'success');
+                  e.currentTarget.parentElement.remove();
+                  if (detailPhotosContainer.children.length === 0) {
+                    detailPhotosContainer.style.display = 'none';
+                  }
+                } catch (err) {
+                  showToast(err.message, 'error');
+                }
+              }
+            });
+          });
+        });
+      }
 
     } catch (err) {
       showToast('載入財產資料失敗: ' + err.message, 'error');
@@ -293,22 +427,35 @@ export default async function assetFormPage({ id } = {}) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const formData = {
-      name: document.getElementById('name').value.trim(),
-      description: document.getElementById('description').value.trim(),
-      categoryId: document.getElementById('categoryId').value || null,
-      custodian: document.getElementById('custodian').value.trim(),
-      custodianRoleId: document.getElementById('custodianRoleId').value || null,
-      custodyDate: document.getElementById('custodyDate').value,
-      returnDate: document.getElementById('returnDate').value || null,
-      location: document.getElementById('location').value.trim(),
-    };
+    const name = document.getElementById('name').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const categoryId = document.getElementById('categoryId').value || null;
+    const custodian = document.getElementById('custodian').value.trim();
+    const custodianRoleId = document.getElementById('custodianRoleId').value || null;
+    const custodyDate = document.getElementById('custodyDate').value;
+    const returnDate = document.getElementById('returnDate').value || null;
+    const location = document.getElementById('location').value.trim();
 
-
-
-    if (!formData.name || !formData.custodian || !formData.custodianRoleId || !formData.custodyDate) {
+    if (!name || !custodian || !custodianRoleId || !custodyDate) {
       showToast('請填寫必要欄位', 'warning');
       return;
+    }
+    
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('description', description);
+    if (categoryId) formData.append('categoryId', categoryId);
+    formData.append('custodian', custodian);
+    if (custodianRoleId) formData.append('custodianRoleId', custodianRoleId);
+    formData.append('custodyDate', custodyDate);
+    if (returnDate) formData.append('returnDate', returnDate);
+    formData.append('location', location);
+    
+    if (selectedImageFile) {
+      formData.append('mainPhoto', selectedImageFile);
+    }
+    if (croppedThumbnailBlob) {
+      formData.append('thumbnailPhoto', croppedThumbnailBlob, 'thumbnail.jpg');
     }
 
     try {
@@ -317,12 +464,34 @@ export default async function assetFormPage({ id } = {}) {
 
       if (isEdit) {
         await assetsAPI.update(id, formData);
+        
+        // upload detail photos if selected
+        const detailPhotosInput = document.getElementById('detailPhotos');
+        if (detailPhotosInput && detailPhotosInput.files.length > 0) {
+          const detailFormData = new FormData();
+          for (let i = 0; i < detailPhotosInput.files.length; i++) {
+            detailFormData.append('detailPhotos', detailPhotosInput.files[i]);
+          }
+          await assetsAPI.uploadDetailPhotos(id, detailFormData);
+        }
+        
         showToast('財產已更新', 'success');
-        navigate(`/ assets / ${id} `);
+        navigate(`/assets/${id}`);
       } else {
         const result = await assetsAPI.create(formData);
+        
+        // upload detail photos if selected
+        const detailPhotosInput = document.getElementById('detailPhotos');
+        if (detailPhotosInput && detailPhotosInput.files.length > 0) {
+          const detailFormData = new FormData();
+          for (let i = 0; i < detailPhotosInput.files.length; i++) {
+            detailFormData.append('detailPhotos', detailPhotosInput.files[i]);
+          }
+          await assetsAPI.uploadDetailPhotos(result.id, detailFormData);
+        }
+        
         showToast('財產已建立', 'success');
-        navigate(`/ assets / ${result.id} `);
+        navigate(`/assets/${result.id}`);
       }
     } catch (err) {
       showToast(err.message, 'error');

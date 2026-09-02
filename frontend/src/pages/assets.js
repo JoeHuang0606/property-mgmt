@@ -29,9 +29,13 @@ export default async function assetsPage() {
             </div>
             <div style="display: flex; gap: 12px;">
               ${isManager() ? `
-                <button class="btn btn-secondary" id="btn-export-qrcodes" style="display:none;">
+                <button class="btn btn-secondary" id="btn-export-qrcodes" disabled>
                   <span class="material-icons-round">qr_code_scanner</span>
-                  <span>匯出 QR Code</span>
+                  <span>掃描 QR CODE (0)</span>
+                </button>
+                <button class="btn btn-danger" id="btn-bulk-delete" disabled>
+                  <span class="material-icons-round">delete</span>
+                  <span>刪除 (0)</span>
                 </button>
                 <a href="#/assets/new" class="btn btn-primary">
                   <span class="material-icons-round">add</span>
@@ -111,10 +115,6 @@ export default async function assetsPage() {
       try {
         await assetsAPI.exportQRCodes(Array.from(selectedAssetIds));
         showToast('匯出成功！', 'success');
-        // 可選：匯出後清空選取
-        // selectedAssetIds.clear();
-        // updateExportButton();
-        // loadAssets();
       } catch (err) {
         showToast(err.message, 'error');
       } finally {
@@ -124,18 +124,56 @@ export default async function assetsPage() {
     });
   }
 
+  const bulkDeleteBtn = document.getElementById('btn-bulk-delete');
+  if (bulkDeleteBtn) {
+    bulkDeleteBtn.addEventListener('click', async () => {
+      if (selectedAssetIds.size === 0) return;
+      
+      showConfirm({
+        title: '刪除財產',
+        message: `確定要刪除選取的 ${selectedAssetIds.size} 筆財產嗎？此操作無法復原。`,
+        danger: true,
+        confirmText: '刪除',
+        onConfirm: async () => {
+          bulkDeleteBtn.disabled = true;
+          const originalText = bulkDeleteBtn.innerHTML;
+          bulkDeleteBtn.innerHTML = '<span class="material-icons-round spin">sync</span> 刪除中...';
+          
+          try {
+            const ids = Array.from(selectedAssetIds);
+            for (const id of ids) {
+              await assetsAPI.delete(id);
+            }
+            showToast('刪除成功！', 'success');
+            selectedAssetIds.clear();
+            updateExportButton();
+            loadAssets();
+          } catch (err) {
+            showToast(err.message, 'error');
+          } finally {
+            bulkDeleteBtn.disabled = false;
+            bulkDeleteBtn.innerHTML = originalText;
+          }
+        }
+      });
+    });
+  }
+
   await loadAssets();
 }
 
 function updateExportButton() {
-  const btn = document.getElementById('btn-export-qrcodes');
-  if (btn) {
-    if (selectedAssetIds.size > 0) {
-      btn.style.display = 'inline-flex';
-      btn.querySelector('span:last-child').textContent = `匯出 QR Code (${selectedAssetIds.size})`;
-    } else {
-      btn.style.display = 'none';
-    }
+  const exportBtn = document.getElementById('btn-export-qrcodes');
+  const deleteBtn = document.getElementById('btn-bulk-delete');
+  
+  if (exportBtn) {
+    exportBtn.querySelector('span:last-child').textContent = `掃描 QR CODE (${selectedAssetIds.size})`;
+    exportBtn.disabled = selectedAssetIds.size === 0;
+  }
+  
+  if (deleteBtn) {
+    deleteBtn.querySelector('span:last-child').textContent = `刪除 (${selectedAssetIds.size})`;
+    deleteBtn.disabled = selectedAssetIds.size === 0;
   }
 }
 
@@ -166,7 +204,7 @@ async function loadAssets() {
     const canManage = isManager();
 
     tableEl.innerHTML = `
-      <div class="table-wrap">
+      <div class="table-wrap mobile-card-table">
         <table>
           <thead>
             <tr>
@@ -186,11 +224,13 @@ async function loadAssets() {
               const isChecked = selectedAssetIds.has(String(a.id)) ? 'checked' : '';
               const currentUser = getUser();
               const _canEdit = isAdmin() || (isManager() && (currentUser?.assignedRoles || []).includes(a.custodianRoleId));
+              const thumbHtml = a.thumbnailUrl ? `<img src="/api/uploads/${a.thumbnailUrl}" alt="thumbnail" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle;" />` : '';
+              
               return `
-                <tr>
+                <tr class="${isChecked ? 'selected' : ''}">
                   ${canManage ? `<td data-label="選擇"><input type="checkbox" class="check-asset" value="${a.id}" ${isChecked} /></td>` : ''}
                   <td data-label="編號"><code style="font-size:0.8rem;color:var(--primary-light);">${a.assetCode}</code></td>
-                  <td data-label="名稱"><strong>${a.name}</strong></td>
+                  <td data-label="名稱"><div style="display: flex; align-items: center;">${thumbHtml}<strong>${a.name}</strong></div></td>
                   <td data-label="分類">${a.categoryName || '-'}</td>
                   <td data-label="保管人">${a.custodian}</td>
                   <td data-label="職類">${a.custodianRoleName || '-'}</td>
@@ -250,6 +290,14 @@ async function loadAssets() {
       const checkAll = document.getElementById('check-all');
       const checkAssets = tableEl.querySelectorAll('.check-asset');
 
+      const updateRowStyle = (cb) => {
+        const tr = cb.closest('tr');
+        if (tr) {
+          if (cb.checked) tr.classList.add('selected');
+          else tr.classList.remove('selected');
+        }
+      };
+
       // 更新全選 Checkbox 狀態
       const updateCheckAll = () => {
         const allChecked = Array.from(checkAssets).every(cb => cb.checked);
@@ -263,6 +311,7 @@ async function loadAssets() {
         const isChecked = e.target.checked;
         checkAssets.forEach(cb => {
           cb.checked = isChecked;
+          updateRowStyle(cb);
           if (isChecked) {
             selectedAssetIds.add(cb.value);
           } else {
@@ -275,6 +324,7 @@ async function loadAssets() {
       // 綁定單選事件
       checkAssets.forEach(cb => {
         cb.addEventListener('change', (e) => {
+          updateRowStyle(e.target);
           if (e.target.checked) {
             selectedAssetIds.add(e.target.value);
           } else {

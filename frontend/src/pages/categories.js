@@ -53,6 +53,7 @@ export default async function categoriesPage() {
 async function loadCategories() {
   const tableEl = document.getElementById('categories-table');
   const canDelete = isAdmin();
+  const canManage = isManager();
 
   try {
     const categories = await categoriesAPI.list();
@@ -65,21 +66,26 @@ async function loadCategories() {
               <th>分類名稱</th>
               <th>英文前綴</th>
               <th>財產數量</th>
-              ${canDelete ? '<th>操作</th>' : ''}
+              ${canManage ? '<th>操作</th>' : ''}
             </tr>
           </thead>
           <tbody>
             ${categories.map(c => `
               <tr>
-                <td><strong>${c.name}</strong></td>
-                <td><code>${c.prefix}</code></td>
-                <td><span class="badge badge-info">${c.assetCount} 項</span></td>
-                ${canDelete ? `
-                  <td>
+                <td data-label="分類名稱"><strong>${c.name}</strong></td>
+                <td data-label="英文前綴"><code>${c.prefix}</code></td>
+                <td data-label="財產數量"><span class="badge badge-info">${c.assetCount} 項</span></td>
+                ${canManage ? `
+                  <td data-label="操作">
                     <div class="action-btns">
+                      <button class="icon-btn edit-btn" data-edit-id="${c.id}" data-edit-name="${c.name}" data-edit-prefix="${c.prefix}" title="編輯">
+                        <span class="material-icons-round">edit</span>
+                      </button>
+                      ${canDelete ? `
                       <button class="icon-btn danger" data-delete-id="${c.id}" data-delete-name="${c.name}" data-count="${c.assetCount}" title="刪除">
                         <span class="material-icons-round">delete</span>
                       </button>
+                      ` : ''}
                     </div>
                   </td>
                 ` : ''}
@@ -87,7 +93,7 @@ async function loadCategories() {
             `).join('')}
             ${categories.length === 0 ? `
               <tr>
-                <td colspan="${canDelete ? 3 : 2}" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                <td colspan="${canManage ? 4 : 3}" style="text-align: center; color: var(--text-muted); padding: 24px;">
                   尚無分類
                 </td>
               </tr>
@@ -96,6 +102,18 @@ async function loadCategories() {
         </table>
       </div>
     `;
+
+    if (canManage) {
+      tableEl.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          showCategoryForm({
+            id: btn.dataset.editId,
+            name: btn.dataset.editName,
+            prefix: btn.dataset.editPrefix
+          });
+        });
+      });
+    }
 
     if (canDelete) {
       tableEl.querySelectorAll('[data-delete-id]').forEach(btn => {
@@ -135,16 +153,18 @@ async function loadCategories() {
   }
 }
 
-function showCategoryForm() {
+function showCategoryForm(category = null) {
+  const isEdit = !!category;
+  
   const body = document.createElement('div');
   body.innerHTML = 
     '<div class="form-group">' +
       '<label class="form-label">分類名稱 *</label>' +
-      '<input type="text" class="form-input" id="modal-category-name" placeholder="輸入分類名稱" />' +
+      `<input type="text" class="form-input" id="modal-category-name" placeholder="輸入分類名稱" value="${isEdit ? category.name : ''}" />` +
     '</div>' +
     '<div class="form-group" style="margin-top:16px;">' +
       '<label class="form-label">英文大寫前綴 *</label>' +
-      '<input type="text" class="form-input" id="modal-category-prefix" placeholder="例如：IT, FUR" style="text-transform:uppercase;" />' +
+      `<input type="text" class="form-input" id="modal-category-prefix" placeholder="例如：IT, FUR" style="text-transform:uppercase;" value="${isEdit ? category.prefix : ''}" />` +
     '</div>';
 
   const footer = document.createElement('div');
@@ -158,13 +178,13 @@ function showCategoryForm() {
 
   const saveBtn = document.createElement('button');
   saveBtn.className = 'btn btn-primary';
-  saveBtn.textContent = '建立';
+  saveBtn.textContent = isEdit ? '儲存' : '建立';
 
   footer.appendChild(cancelBtn);
   footer.appendChild(saveBtn);
 
   const { close } = showModal({
-    title: '新增分類',
+    title: isEdit ? '編輯分類' : '新增分類',
     content: body,
     footer,
   });
@@ -185,11 +205,16 @@ function showCategoryForm() {
     }
 
     saveBtn.disabled = true;
-    saveBtn.textContent = '建立中...';
+    saveBtn.textContent = isEdit ? '儲存中...' : '建立中...';
 
     try {
-      await categoriesAPI.create({ name, prefix });
-      showToast('分類已建立', 'success');
+      if (isEdit) {
+        await categoriesAPI.update(category.id, { name, prefix });
+        showToast('分類已更新', 'success');
+      } else {
+        await categoriesAPI.create({ name, prefix });
+        showToast('分類已建立', 'success');
+      }
 
       close();
       loadCategories();
@@ -197,7 +222,7 @@ function showCategoryForm() {
       showToast(err.message, 'error');
     } finally {
       saveBtn.disabled = false;
-      saveBtn.textContent = '建立';
+      saveBtn.textContent = isEdit ? '儲存' : '建立';
     }
   };
 }

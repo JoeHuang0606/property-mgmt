@@ -70,12 +70,15 @@ async function loadRoles() {
           <tbody>
             ${roles.map(r => `
               <tr>
-                <td><strong>${r.name}</strong></td>
-                <td><code>${r.prefix}</code></td>
-                <td><span class="badge badge-info">${r.assetCount} 項</span></td>
+                <td data-label="職類名稱"><strong>${r.name}</strong></td>
+                <td data-label="職類前綴"><code>${r.prefix}</code></td>
+                <td data-label="財產數量"><span class="badge badge-info">${r.assetCount} 項</span></td>
                 ${canManage ? `
-                  <td>
+                  <td data-label="操作">
                     <div class="action-btns">
+                      <button class="icon-btn edit-btn" data-edit-id="${r.id}" data-edit-name="${r.name}" data-edit-prefix="${r.prefix}" title="編輯">
+                        <span class="material-icons-round">edit</span>
+                      </button>
                       <button class="icon-btn danger" data-delete-id="${r.id}" data-delete-name="${r.name}" data-count="${r.assetCount}" title="刪除">
                         <span class="material-icons-round">delete</span>
                       </button>
@@ -97,6 +100,16 @@ async function loadRoles() {
     `;
 
     if (canManage) {
+      tableEl.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          showRoleForm({
+            id: btn.dataset.editId,
+            name: btn.dataset.editName,
+            prefix: btn.dataset.editPrefix
+          });
+        });
+      });
+
       tableEl.querySelectorAll('[data-delete-id]').forEach(btn => {
         btn.addEventListener('click', () => {
           const count = parseInt(btn.dataset.count);
@@ -134,16 +147,18 @@ async function loadRoles() {
   }
 }
 
-function showRoleForm() {
+function showRoleForm(role = null) {
+  const isEdit = !!role;
+
   const body = document.createElement('div');
   body.innerHTML = 
     '<div class="form-group">' +
       '<label class="form-label">職類名稱 *</label>' +
-      '<input type="text" class="form-input" id="modal-role-name" placeholder="例如：護理部、營養科" />' +
+      `<input type="text" class="form-input" id="modal-role-name" placeholder="例如：護理部、營養科" value="${isEdit ? role.name : ''}" />` +
     '</div>' +
     '<div class="form-group">' +
       '<label class="form-label">職類前綴 (大寫英文或數字) *</label>' +
-      '<input type="text" class="form-input" id="modal-role-prefix" placeholder="例如：NUR, NUT, 001" style="text-transform: uppercase;" />' +
+      `<input type="text" class="form-input" id="modal-role-prefix" placeholder="例如：NUR, NUT, 001" style="text-transform: uppercase;" value="${isEdit ? role.prefix : ''}" />` +
     '</div>';
 
   const footer = document.createElement('div');
@@ -157,13 +172,13 @@ function showRoleForm() {
 
   const saveBtn = document.createElement('button');
   saveBtn.className = 'btn btn-primary';
-  saveBtn.textContent = '建立';
+  saveBtn.textContent = isEdit ? '儲存' : '建立';
 
   footer.appendChild(cancelBtn);
   footer.appendChild(saveBtn);
 
   const { close } = showModal({
-    title: '新增職類',
+    title: isEdit ? '編輯職類' : '新增職類',
     content: body,
     footer,
   });
@@ -190,11 +205,16 @@ function showRoleForm() {
     }
 
     saveBtn.disabled = true;
-    saveBtn.textContent = '建立中...';
+    saveBtn.textContent = isEdit ? '儲存中...' : '建立中...';
 
     try {
-      await rolesAPI.create({ name, prefix });
-      showToast('職類已建立', 'success');
+      if (isEdit) {
+        await rolesAPI.update(role.id, { name, prefix });
+        showToast('職類已更新', 'success');
+      } else {
+        await rolesAPI.create({ name, prefix });
+        showToast('職類已建立', 'success');
+      }
 
       close();
       loadRoles();
@@ -202,7 +222,7 @@ function showRoleForm() {
       showToast(err.message, 'error');
     } finally {
       saveBtn.disabled = false;
-      saveBtn.textContent = '建立';
+      saveBtn.textContent = isEdit ? '儲存' : '建立';
     }
   };
 }
