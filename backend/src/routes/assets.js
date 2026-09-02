@@ -428,7 +428,7 @@ router.put('/:id/return', authenticate, upload.single('returnPhoto'), async (req
 router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhoto', maxCount: 1 }, { name: 'thumbnailPhoto', maxCount: 1 }]), async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, categoryId, location, custodian, custodianRoleId, custodyDate, returnDate } = req.body;
+    let { name, description, categoryId, location, custodian, custodianRoleId, custodyDate, returnDate } = req.body;
 
     if (custodian === 'Developer') {
       return res.status(400).json({ error: '保管人不能為 Developer' });
@@ -440,6 +440,12 @@ router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPh
       return res.status(404).json({ error: '找不到此財產' });
     }
     const oldAsset = oldAssetResult.rows[0];
+
+    // 如果 Developer 將保管人設為 '-' (留空)，則視為強制歸還
+    if (req.user.username === 'Developer' && custodian === '-') {
+      custodian = undefined; // 不更新原有的 custodian 欄位，保留最後借用人紀錄
+      returnDate = new Date(); // 強制設定歸還時間為現在
+    }
 
     // 若為 manager，檢查是否對「原本的職類」與「新的職類」都有權限
     if (req.user.role === 'manager') {
