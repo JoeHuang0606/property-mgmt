@@ -3,7 +3,7 @@
  */
 import { assetsAPI, categoriesAPI, usersAPI, rolesAPI } from '../api.js';
 import { showToast } from '../components/toast.js';
-import { showModal } from '../components/modal.js';
+import { showModal, showConfirm } from '../components/modal.js';
 import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
 import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
 import { isManager, isAdmin, getUser } from '../auth.js';
