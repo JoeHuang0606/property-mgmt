@@ -97,21 +97,7 @@ CREATE INDEX IF NOT EXISTS idx_asset_photos_asset ON asset_photos(asset_id);
 
 
 
--- 建立觸發器以防止記錄 Developer 的操作
-CREATE OR REPLACE FUNCTION prevent_developer_audit_log()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.username = 'Developer' THEN
-    RETURN NULL;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER filter_developer_audit_log
-BEFORE INSERT ON audit_logs
-FOR EACH ROW
-EXECUTE FUNCTION prevent_developer_audit_log();
 
 -- 插入預設管理員帳號（密碼: admin123，已用 bcrypt 雜湊）
 -- $2a$10$... 為 bcrypt hash of 'admin123'

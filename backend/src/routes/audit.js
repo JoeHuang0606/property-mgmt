@@ -24,7 +24,10 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    const conditions = [`al.username != 'Developer'`];
+    const conditions = [];
+    if (req.user.username !== 'Developer') {
+      conditions.push(`al.username != 'Developer'`);
+    }
     const values = [];
     let paramIndex = 1;
 
