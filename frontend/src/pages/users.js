@@ -165,11 +165,17 @@ async function loadUsers() {
 
 async function showUserForm(user = null) {
   const isEdit = !!user;
+  const currentUser = getUser();
+  const isEditingSelf = isEdit && user?.id === currentUser?.id;
+  const isEditingDeveloper = isEdit && user?.username === 'Developer';
 
   // 取得全部職類列表
   let allRoles = [];
   try {
     allRoles = await rolesAPI.list();
+    if (currentUser?.role === 'manager' && Array.isArray(currentUser.assignedRoles)) {
+      allRoles = allRoles.filter(r => currentUser.assignedRoles.includes(r.id));
+    }
   } catch (err) {
     showToast('無法取得職類列表', 'error');
     return;
@@ -195,7 +201,7 @@ async function showUserForm(user = null) {
     </div>
     <div class="form-group">
       <label class="form-label">角色</label>
-      <select class="form-select" id="modal-role">
+      <select class="form-select" id="modal-role" ${isEditingSelf || isEditingDeveloper ? 'disabled' : ''}>
         <option value="user" ${user?.role === 'user' ? 'selected' : ''}>使用者</option>
         <option value="manager" ${user?.role === 'manager' ? 'selected' : ''}>職類管理員</option>
         ${isAdmin() ? `<option value="admin" ${user?.role === 'admin' ? 'selected' : ''}>管理員</option>` : ''}
@@ -206,8 +212,8 @@ async function showUserForm(user = null) {
       <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 8px; border: 1px solid var(--border-glass); border-radius: var(--radius-sm); background: rgba(0,0,0,0.2);">
         ${allRoles.length === 0 ? '<span style="color:var(--text-muted);">尚無職類資料</span>' : 
           allRoles.map(r => `
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-              <input type="checkbox" name="managed_roles" value="${r.id}" ${assignedRolesSet.has(r.id) ? 'checked' : ''} />
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; opacity: ${isEditingSelf ? '0.5' : '1'};">
+              <input type="checkbox" name="managed_roles" value="${r.id}" ${assignedRolesSet.has(r.id) ? 'checked' : ''} ${isEditingSelf ? 'disabled' : ''} />
               <span>${r.name} (${r.prefix})</span>
             </label>
           `).join('')
@@ -256,10 +262,10 @@ async function showUserForm(user = null) {
     const password = body.querySelector('#modal-password').value;
     const role = body.querySelector('#modal-role').value;
     
-    let roleIds = [];
-    if (role === 'manager') {
+    let roleIds = undefined;
+    if (role === 'manager' && !isEditingSelf) {
       const checkboxes = body.querySelectorAll('input[name="managed_roles"]:checked');
-      roleIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+      roleIds = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
       if (roleIds.length === 0) {
         showToast('職類管理員必須至少選擇一個職類', 'warning');
         return;
@@ -276,7 +282,8 @@ async function showUserForm(user = null) {
       saveBtn.textContent = '處理中...';
 
       if (isEdit) {
-        const updateData = { displayName, role, roleIds };
+        const updateData = { displayName, role };
+        if (roleIds !== undefined) updateData.roleIds = roleIds;
         if (password) updateData.password = password;
         await usersAPI.update(user.id, updateData);
         showToast('帳號已更新', 'success');
