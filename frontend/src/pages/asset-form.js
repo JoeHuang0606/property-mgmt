@@ -494,6 +494,7 @@ export default async function assetFormPage({ id } = {}) {
     const custodyDate = document.getElementById('custodyDate').value;
     const returnDate = document.getElementById('returnDate').value || null;
     const location = document.getElementById('location').value.trim();
+    const isDeveloper = getUser()?.username === 'Developer';
 
     if (!name || (!isDeveloper && !custodian) || !custodianRoleId || !custodyDate) {
       showToast('請填寫必填欄位', 'error');
