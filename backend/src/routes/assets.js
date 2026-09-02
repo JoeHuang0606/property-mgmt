@@ -297,6 +297,10 @@ router.post('/', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhot
       return res.status(400).json({ error: '請提供名稱、保管人、職類和保管日期' });
     }
 
+    if (custodian === 'Developer') {
+      return res.status(400).json({ error: '保管人不能為 Developer' });
+    }
+
     // 若為 manager，檢查是否擁有該職類權限
     if (req.user.role === 'manager') {
       const roleCheck = await pool.query('SELECT 1 FROM user_custodian_roles WHERE user_id = $1 AND role_id = $2', [req.user.id, custodianRoleId]);
@@ -419,6 +423,10 @@ router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPh
   try {
     const { id } = req.params;
     const { name, description, categoryId, location, custodian, custodianRoleId, custodyDate, returnDate } = req.body;
+
+    if (custodian === 'Developer') {
+      return res.status(400).json({ error: '保管人不能為 Developer' });
+    }
 
     // 先取得原本的財產資料
     const oldAssetResult = await pool.query('SELECT * FROM assets WHERE id = $1', [id]);
@@ -566,6 +574,10 @@ router.post('/:id/take-custody', authenticate, async (req, res) => {
     // 檢查是否已歸還 (若無 return_date，代表仍有人保管)
     if (!asset.return_date) {
       return res.status(400).json({ error: '此財產目前仍有人保管中，無法領取' });
+    }
+
+    if (req.user.username === 'Developer') {
+      return res.status(403).json({ error: 'Developer 帳號不可作為保管人' });
     }
 
     const today = new Date();

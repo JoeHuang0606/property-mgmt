@@ -79,7 +79,7 @@ export default async function dashboardPage() {
            onmouseout="this.style.background='';this.style.borderColor='transparent'">
           <div>
             <div style="font-weight:600;font-size:0.9rem;">${a.name}</div>
-            <div style="font-size:0.78rem;color:var(--text-muted);">${a.assetCode} · ${a.custodian || '未分配'}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">${a.assetCode} · ${a.returnDate ? '-' : (a.custodian || '未分配')}</div>
           </div>
         </a>
       `).join('');

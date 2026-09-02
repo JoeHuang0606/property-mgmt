@@ -259,7 +259,7 @@ async function loadAssets() {
                   <td data-label="編號"><code style="font-size:0.8rem;color:var(--primary-light);">${a.assetCode}</code></td>
                   <td data-label="名稱"><div style="display: flex; align-items: center;">${thumbHtml}<strong>${a.name}</strong></div></td>
                   <td data-label="分類">${a.categoryName || '-'}</td>
-                  <td data-label="保管人">${a.custodian}</td>
+                  <td data-label="保管人">${a.returnDate ? '-' : a.custodian}</td>
                   <td data-label="職類">${a.custodianRoleName || '-'}</td>
                   <td data-label="保管日期">${formatDate(a.custodyDate)}</td>
                   <td data-label="歸還日期">

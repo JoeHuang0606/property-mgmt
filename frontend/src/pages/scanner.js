@@ -269,7 +269,7 @@ async function lookupAsset(code) {
           </div>
           <div class="detail-field">
             <div class="detail-label">保管人</div>
-            <div class="detail-value">${asset.custodian}</div>
+            <div class="detail-value">${asset.returnDate ? '-' : asset.custodian}</div>
           </div>
           <div class="detail-field">
             <div class="detail-label">歸還日期</div>

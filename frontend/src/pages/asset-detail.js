@@ -152,7 +152,7 @@ function renderDetail(a, history = []) {
             </div>
             <div class="detail-field">
               <div class="detail-label">保管人</div>
-              <div class="detail-value" style="font-weight:600;">${a.custodian}</div>
+              <div class="detail-value" style="font-weight:600;">${a.returnDate ? '-' : a.custodian}</div>
             </div>
             <div class="detail-field">
               <div class="detail-label">擁有職類</div>
@@ -292,7 +292,7 @@ function renderDetail(a, history = []) {
           <h2>${a.name}</h2>
           <img src="${a.qrCode}" style="max-width:300px;" />
           <p style="font-family:monospace;font-size:18px;margin-top:16px;">${a.assetCode}</p>
-          <p>${a.custodian} · ${formatDate(a.custodyDate)}</p>
+          <p>${a.returnDate ? '-' : a.custodian} · ${formatDate(a.custodyDate)}</p>
         </body>
         </html>
       `);
