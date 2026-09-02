@@ -152,7 +152,18 @@ function renderDetail(a, history = []) {
             </div>
             <div class="detail-field">
               <div class="detail-label">保管人</div>
-              <div class="detail-value" style="font-weight:600;">${a.returnDate ? '-' : a.custodian}</div>
+              <div class="detail-value" style="font-weight:600;">
+                ${a.returnDate || !a.custodian ? '-' : `
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <div style="width:28px;height:28px;border-radius:var(--radius-pill);background:var(--primary-dark);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.8rem;overflow:hidden;flex-shrink:0;">
+                      ${a.custodianAvatarUrl
+                        ? `<img src="/api/uploads/${a.custodianAvatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" />`
+                        : a.custodian.charAt(0).toUpperCase()}
+                    </div>
+                    <span>${a.custodian}</span>
+                  </div>
+                `}
+              </div>
             </div>
             <div class="detail-field">
               <div class="detail-label">擁有職類</div>

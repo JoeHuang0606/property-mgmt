@@ -112,11 +112,12 @@ router.get('/', async (req, res) => {
 
     // 資料
     const dataResult = await pool.query(
-      `SELECT a.*, c.name AS category_name, u.display_name AS creator_name, cr.name AS custodian_role_name
+      `SELECT a.*, c.name AS category_name, u.display_name AS creator_name, cr.name AS custodian_role_name, cu.avatar_url AS custodian_avatar_url
        FROM assets a
        LEFT JOIN categories c ON a.category_id = c.id
        LEFT JOIN users u ON a.created_by = u.id
        LEFT JOIN custodian_roles cr ON a.custodian_role_id = cr.id
+       LEFT JOIN users cu ON a.custodian = cu.username
        ${whereClause}
        ORDER BY a.${sortColumn} ${sortOrder}
        LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
@@ -133,6 +134,7 @@ router.get('/', async (req, res) => {
         categoryName: a.category_name,
         location: a.location,
         custodian: a.custodian,
+        custodianAvatarUrl: a.custodian_avatar_url,
         custodianRoleId: a.custodian_role_id,
         custodianRoleName: a.custodian_role_name,
         custodyDate: a.custody_date,
@@ -191,11 +193,12 @@ router.get('/stats', async (req, res) => {
 router.get('/code/:code', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT a.*, c.name AS category_name, u.display_name AS creator_name, cr.name AS custodian_role_name
+      `SELECT a.*, c.name AS category_name, u.display_name AS creator_name, cr.name AS custodian_role_name, cu.avatar_url AS custodian_avatar_url
        FROM assets a
        LEFT JOIN categories c ON a.category_id = c.id
        LEFT JOIN users u ON a.created_by = u.id
        LEFT JOIN custodian_roles cr ON a.custodian_role_id = cr.id
+       LEFT JOIN users cu ON a.custodian = cu.username
        WHERE a.asset_code = $1`,
       [req.params.code]
     );
@@ -214,6 +217,7 @@ router.get('/code/:code', async (req, res) => {
       categoryName: a.category_name,
       location: a.location,
       custodian: a.custodian,
+      custodianAvatarUrl: a.custodian_avatar_url,
       custodianRoleId: a.custodian_role_id,
       custodianRoleName: a.custodian_role_name,
       custodyDate: a.custody_date,
@@ -239,11 +243,12 @@ router.get('/code/:code', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT a.*, c.name AS category_name, u.display_name AS creator_name, cr.name AS custodian_role_name
+      `SELECT a.*, c.name AS category_name, u.display_name AS creator_name, cr.name AS custodian_role_name, cu.avatar_url AS custodian_avatar_url
        FROM assets a
        LEFT JOIN categories c ON a.category_id = c.id
        LEFT JOIN users u ON a.created_by = u.id
        LEFT JOIN custodian_roles cr ON a.custodian_role_id = cr.id
+       LEFT JOIN users cu ON a.custodian = cu.username
        WHERE a.id = $1`,
       [req.params.id]
     );
@@ -266,6 +271,7 @@ router.get('/:id', async (req, res) => {
       categoryName: a.category_name,
       location: a.location,
       custodian: a.custodian,
+      custodianAvatarUrl: a.custodian_avatar_url,
       custodianRoleId: a.custodian_role_id,
       custodianRoleName: a.custodian_role_name,
       custodyDate: a.custody_date,
