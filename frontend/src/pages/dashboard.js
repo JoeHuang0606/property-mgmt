@@ -1,7 +1,7 @@
 /**
  * 儀表板頁面
  */
-import { assetsAPI, categoriesAPI } from '../api.js';
+import { assetsAPI } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
 import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
@@ -32,7 +32,7 @@ export default async function dashboardPage() {
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:24px;">
+          <div style="display:grid;grid-template-columns:1fr;gap:24px;">
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">📦 最近新增財產</h3>
@@ -42,14 +42,6 @@ export default async function dashboardPage() {
                 <div class="skeleton skeleton-card" style="margin-bottom:8px;height:48px;"></div>
                 <div class="skeleton skeleton-card" style="margin-bottom:8px;height:48px;"></div>
                 <div class="skeleton skeleton-card" style="height:48px;"></div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">📁 分類統計</h3>
-              </div>
-              <div id="category-stats">
-                <div class="skeleton skeleton-card" style="height:200px;"></div>
               </div>
             </div>
           </div>
@@ -63,10 +55,9 @@ export default async function dashboardPage() {
 
   // 載入統計數據
   try {
-    const [stats, assetsData, categories] = await Promise.all([
+    const [stats, assetsData] = await Promise.all([
       assetsAPI.stats(),
       assetsAPI.list({ limit: 5, sort: 'created_at', order: 'DESC' }),
-      categoriesAPI.list(),
     ]);
 
     // 動態更新統計數字（含計數動畫）
@@ -92,28 +83,6 @@ export default async function dashboardPage() {
           </div>
         </a>
       `).join('');
-    }
-
-    // 分類統計
-    const catEl = document.getElementById('category-stats');
-    if (categories.length === 0) {
-      catEl.innerHTML = '<div class="empty-state" style="padding:30px;"><div class="empty-state-title">尚無分類</div></div>';
-    } else {
-      const maxCount = Math.max(...categories.map(c => c.assetCount), 1);
-      catEl.innerHTML = categories.map(c => {
-        const pct = (c.assetCount / maxCount * 100).toFixed(0);
-        return `
-          <div style="margin-bottom:14px;">
-            <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
-              <span>${c.name}</span>
-              <span style="color:var(--text-muted);">${c.assetCount} 項</span>
-            </div>
-            <div style="height:8px;background:var(--bg-surface);border-radius:4px;overflow:hidden;">
-              <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:4px;transition:width 1s ease;"></div>
-            </div>
-          </div>
-        `;
-      }).join('');
     }
   } catch (err) {
     showToast('載入儀表板數據失敗: ' + err.message, 'error');
