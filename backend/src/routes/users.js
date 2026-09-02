@@ -15,14 +15,23 @@ router.use(authenticate);
  */
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(`
+    let query = `
       SELECT u.id, u.username, u.display_name, u.role, u.created_at, u.updated_at,
              COALESCE(array_agg(ucr.role_id) FILTER (WHERE ucr.role_id IS NOT NULL), '{}') AS assigned_roles
       FROM users u
       LEFT JOIN user_custodian_roles ucr ON u.id = ucr.user_id
+    `;
+    
+    if (req.user.role === 'manager') {
+      query += ` WHERE u.role != 'admin' `;
+    }
+
+    query += `
       GROUP BY u.id
       ORDER BY u.created_at DESC
-    `);
+    `;
+
+    const result = await pool.query(query);
     res.json(result.rows.map(u => ({
       id: u.id,
       username: u.username,
@@ -40,9 +49,9 @@ router.get('/', async (req, res) => {
 
 /**
  * POST /api/users
- * 新增使用者（僅 admin）
+ * 新增使用者（僅 admin, manager）
  */
-router.post('/', authorize('admin'), async (req, res) => {
+router.post('/', authorize('admin', 'manager'), async (req, res) => {
   const client = await pool.connect();
   try {
     const { username, password, displayName, role, roleIds } = req.body;
@@ -59,6 +68,10 @@ router.post('/', authorize('admin'), async (req, res) => {
     const userRole = role || 'user';
     if (!validRoles.includes(userRole)) {
       return res.status(400).json({ error: '無效的角色' });
+    }
+
+    if (req.user.role === 'manager' && userRole === 'admin') {
+      return res.status(403).json({ error: '職類管理員無法建立系統管理員' });
     }
 
     if (userRole === 'manager') {
@@ -118,7 +131,7 @@ router.post('/', authorize('admin'), async (req, res) => {
  * PUT /api/users/:id
  * 更新使用者
  */
-router.put('/:id', authorize('admin'), async (req, res) => {
+router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
   const client = await pool.connect();
   try {
     const { id } = req.params;
@@ -129,11 +142,27 @@ router.put('/:id', authorize('admin'), async (req, res) => {
       return res.status(400).json({ error: '不能修改自己的角色' });
     }
 
+    // 檢查目標使用者的原始角色
+    const targetUserRes = await client.query('SELECT role FROM users WHERE id = $1', [id]);
+    if (targetUserRes.rows.length === 0) {
+      return res.status(404).json({ error: '使用者不存在' });
+    }
+    const originalRole = targetUserRes.rows[0].role;
+
+    // 職類管理員無法編輯系統管理員
+    if (req.user.role === 'manager' && originalRole === 'admin') {
+      return res.status(403).json({ error: '職類管理員無法編輯系統管理員' });
+    }
+
+    // 職類管理員無法將角色變更為系統管理員
+    if (req.user.role === 'manager' && role === 'admin') {
+      return res.status(403).json({ error: '職類管理員無法將角色變更為系統管理員' });
+    }
+
     // 當指定修改為 manager，或是未傳入 role (表示維持現狀) 但送出了 roleIds 時，如果使用者原本就是 manager，都要進行檢查
     let userRole = role;
     if (!userRole) {
-      const uRes = await client.query('SELECT role FROM users WHERE id = $1', [id]);
-      if (uRes.rows.length > 0) userRole = uRes.rows[0].role;
+      userRole = originalRole;
     }
 
     if (userRole === 'manager' && roleIds !== undefined) {
@@ -236,13 +265,25 @@ router.put('/:id', authorize('admin'), async (req, res) => {
  * DELETE /api/users/:id
  * 刪除使用者
  */
-router.delete('/:id', authorize('admin'), async (req, res) => {
+router.delete('/:id', authorize('admin', 'manager'), async (req, res) => {
   try {
     const { id } = req.params;
 
     // 不能刪除自己
     if (parseInt(id) === req.user.id) {
       return res.status(400).json({ error: '不能刪除自己的帳號' });
+    }
+
+    // 檢查目標使用者的原始角色
+    const targetUserRes = await pool.query('SELECT role FROM users WHERE id = $1', [id]);
+    if (targetUserRes.rows.length === 0) {
+      return res.status(404).json({ error: '使用者不存在' });
+    }
+    const originalRole = targetUserRes.rows[0].role;
+
+    // 職類管理員無法刪除系統管理員
+    if (req.user.role === 'manager' && originalRole === 'admin') {
+      return res.status(403).json({ error: '職類管理員無法刪除系統管理員' });
     }
 
     const result = await pool.query(
@@ -269,9 +310,9 @@ router.delete('/:id', authorize('admin'), async (req, res) => {
 
 /**
  * PUT /api/users/:id/roles
- * 更新使用者的職類分配（僅 admin 可操作）
+ * 更新使用者的職類分配（僅 admin, manager 可操作）
  */
-router.put('/:id/roles', authorize('admin'), async (req, res) => {
+router.put('/:id/roles', authorize('admin', 'manager'), async (req, res) => {
   const client = await pool.connect();
   try {
     const { id } = req.params;

@@ -25,6 +25,7 @@ export function renderSidebar() {
       items: [
         { icon: 'add_circle', label: '新增財產', path: '/assets/new' },
         { icon: 'category', label: '分類管理', path: '/categories' },
+        { icon: 'people', label: '帳號管理', path: '/users' },
       ],
     });
   }
@@ -34,7 +35,6 @@ export function renderSidebar() {
     menuItems.push({
       section: '系統管理',
       items: [
-        { icon: 'people', label: '帳號管理', path: '/users' },
         { icon: 'manage_accounts', label: '職類管理', path: '/roles' },
         { icon: 'backup', label: '資料管理', path: '/system-backup' },
         { icon: 'history', label: '操作日誌', path: '/audit' },

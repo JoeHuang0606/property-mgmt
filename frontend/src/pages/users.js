@@ -6,7 +6,7 @@ import { showToast } from '../components/toast.js';
 import { showModal, showConfirm } from '../components/modal.js';
 import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
 import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
-import { getUser } from '../auth.js';
+import { getUser, isAdmin } from '../auth.js';
 
 export default async function usersPage() {
   const app = document.getElementById('app');
@@ -47,6 +47,7 @@ export default async function usersPage() {
 async function loadUsers() {
   const tableEl = document.getElementById('users-table');
   const currentUser = getUser();
+  const currentUserIsAdmin = isAdmin();
 
   try {
     const users = await usersAPI.list();
@@ -74,15 +75,17 @@ async function loadUsers() {
                 <td data-label="建立時間" style="color:var(--text-muted);font-size:0.85rem;">${new Date(u.createdAt).toLocaleString('zh-TW')}</td>
                 <td data-label="操作">
                   <div class="action-btns">
+                    ${(u.role !== 'admin' || currentUserIsAdmin) ? `
                     <button class="icon-btn" data-edit-id="${u.id}" data-edit-username="${u.username}" data-edit-display="${u.displayName}" data-edit-role="${u.role}" data-edit-assigned-roles='${JSON.stringify(u.assignedRoles || [])}' title="編輯">
                       <span class="material-icons-round">edit</span>
                     </button>
-                    ${u.role === 'manager' ? `
+                    ` : ''}
+                    ${(u.role === 'manager' && (currentUserIsAdmin || u.role !== 'admin')) ? `
                       <button class="icon-btn" data-assign-id="${u.id}" data-assign-username="${u.username}" data-assign-roles='${JSON.stringify(u.assignedRoles || [])}' title="分配職類">
                         <span class="material-icons-round">assignment_ind</span>
                       </button>
                     ` : ''}
-                    ${u.id !== currentUser?.id ? `
+                    ${(u.role !== 'admin' || currentUserIsAdmin) && u.id !== currentUser?.id ? `
                       <button class="icon-btn danger" data-delete-id="${u.id}" data-delete-name="${u.displayName}" title="刪除">
                         <span class="material-icons-round">delete</span>
                       </button>
@@ -186,7 +189,7 @@ async function showUserForm(user = null) {
       <select class="form-select" id="modal-role">
         <option value="user" ${user?.role === 'user' ? 'selected' : ''}>使用者</option>
         <option value="manager" ${user?.role === 'manager' ? 'selected' : ''}>職類管理員</option>
-        <option value="admin" ${user?.role === 'admin' ? 'selected' : ''}>管理員</option>
+        ${isAdmin() ? `<option value="admin" ${user?.role === 'admin' ? 'selected' : ''}>管理員</option>` : ''}
       </select>
     </div>
     <div class="form-group" id="modal-role-selection" style="display: ${user?.role === 'manager' ? 'block' : 'none'}; border-top: 1px solid var(--border-glass); padding-top: 16px; margin-top: 16px;">
