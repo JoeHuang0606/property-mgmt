@@ -110,10 +110,10 @@ export const assetsAPI = {
       method: 'PUT',
       body: data instanceof FormData ? data : JSON.stringify(data),
     }),
-  returnAsset: (id, returnDate) =>
+  returnAsset: (id, formData) =>
     request(`/assets/${id}/return`, {
       method: 'PUT',
-      body: JSON.stringify({ returnDate }),
+      body: formData,
     }),
   takeCustody: (id) =>
     request(`/assets/${id}/take-custody`, {

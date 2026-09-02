@@ -235,6 +235,13 @@ function renderDetail(a, history = []) {
             </div>
           </div>
         `}
+        
+        ${history && history.find(h => h.returnPhoto) ? `
+          <div style="margin-bottom: 24px;">
+            <div class="detail-label" style="margin-bottom: 8px;">最後歸還照片</div>
+            <img src="/api/uploads/${history.find(h => h.returnPhoto).returnPhoto}" class="enlargeable-image" alt="Return Photo" style="max-width: 100%; border-radius: 8px; max-height: 400px; object-fit: contain; background: var(--bg-surface); cursor: pointer;" />
+          </div>
+        ` : ''}
 
         <div class="detail-label" style="margin-bottom: 8px;">詳情圖片 (${a.detailPhotos ? a.detailPhotos.length : 0})</div>
         ${a.detailPhotos && a.detailPhotos.length > 0 ? `
@@ -314,24 +321,73 @@ function renderDetail(a, history = []) {
   if (canReturn) {
     const returnBtn = document.getElementById('btn-return-asset');
     if (returnBtn) {
-      returnBtn.addEventListener('click', async (e) => {
-        const returnDate = new Date().toISOString().slice(0, 10);
-        try {
-          const btn = e.currentTarget;
-          btn.disabled = true;
-          btn.innerHTML = '<span class="material-icons-round rotate">sync</span> 處理中...';
-          await assetsAPI.returnAsset(a.id, returnDate);
-          showToast('財產歸還成功', 'success');
-          const [updatedAsset, historyData] = await Promise.all([
-            assetsAPI.get(a.id),
-            assetsAPI.getHistory(a.id)
-          ]);
-          renderDetail(updatedAsset, historyData);
-        } catch (err) {
-          showToast('歸還失敗: ' + err.message, 'error');
-          e.currentTarget.disabled = false;
-          e.currentTarget.innerHTML = '<span class="material-icons-round">assignment_return</span> 確認歸還';
-        }
+      returnBtn.addEventListener('click', () => {
+        const formHtml = `
+          <div style="display:flex; flex-direction:column; gap:16px; margin-top: 10px;">
+            <p style="color:var(--text-secondary); font-size:0.95rem;">歸還財產前，請上傳最新的現況照片（必填）。</p>
+            <div class="form-group">
+              <label>上傳歸還照片 <span style="color:var(--danger);">*</span></label>
+              <input type="file" id="return-photo-input" accept="image/*" class="form-control" />
+            </div>
+          </div>
+        `;
+        
+        const footerEl = document.createElement('div');
+        footerEl.style.display = 'flex';
+        footerEl.style.gap = '10px';
+        footerEl.style.justifyContent = 'flex-end';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-ghost';
+        cancelBtn.textContent = '取消';
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'btn btn-primary';
+        confirmBtn.innerHTML = '<span class="material-icons-round">upload</span> 確認歸還';
+        
+        footerEl.appendChild(cancelBtn);
+        footerEl.appendChild(confirmBtn);
+        
+        const { close } = showModal({
+          title: '確認歸還財產',
+          content: formHtml,
+          footer: footerEl,
+          width: '400px'
+        });
+        
+        cancelBtn.addEventListener('click', close);
+        
+        confirmBtn.addEventListener('click', async () => {
+          const fileInput = document.getElementById('return-photo-input');
+          const file = fileInput.files[0];
+          if (!file) {
+            showToast('請上傳歸還照片', 'error');
+            return;
+          }
+          
+          const returnDate = new Date().toISOString().slice(0, 10);
+          const formData = new FormData();
+          formData.append('returnDate', returnDate);
+          formData.append('returnPhoto', file);
+          
+          try {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="material-icons-round rotate">sync</span> 處理中...';
+            await assetsAPI.returnAsset(a.id, formData);
+            showToast('財產歸還成功', 'success');
+            close();
+            
+            const [updatedAsset, historyData] = await Promise.all([
+              assetsAPI.get(a.id),
+              assetsAPI.getHistory(a.id)
+            ]);
+            renderDetail(updatedAsset, historyData);
+          } catch (err) {
+            showToast('歸還失敗: ' + err.message, 'error');
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<span class="material-icons-round">upload</span> 確認歸還';
+          }
+        });
       });
     }
   }

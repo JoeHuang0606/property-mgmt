@@ -360,10 +360,15 @@ router.post('/', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhot
  * PUT /api/assets/:id/return
  * 歸還財產（僅限該財產保管人或 admin/manager）
  */
-router.put('/:id/return', authenticate, async (req, res) => {
+router.put('/:id/return', authenticate, upload.single('returnPhoto'), async (req, res) => {
   try {
     const { id } = req.params;
     const { returnDate } = req.body;
+
+    const returnPhoto = req.file ? req.file.filename : null;
+    if (!returnPhoto) {
+      return res.status(400).json({ error: '必須上傳歸還照片' });
+    }
 
     // 先查詢財產
     const assetResult = await pool.query('SELECT * FROM assets WHERE id = $1', [id]);
@@ -387,10 +392,10 @@ router.put('/:id/return', authenticate, async (req, res) => {
 
     const a = result.rows[0];
 
-    // 關閉仍在保管中的歷史紀錄
+    // 關閉仍在保管中的歷史紀錄，並寫入歸還照片
     await pool.query(
-      'UPDATE asset_custody_history SET return_date = $1 WHERE asset_id = $2 AND return_date IS NULL',
-      [returnDate || new Date(), id]
+      'UPDATE asset_custody_history SET return_date = $1, return_photo = $2 WHERE asset_id = $3 AND return_date IS NULL',
+      [returnDate || new Date(), returnPhoto, id]
     );
 
     // 記錄日誌
@@ -606,6 +611,7 @@ router.get('/:id/history', authenticate, async (req, res) => {
       custodian: row.custodian,
       takeDate: row.take_date,
       returnDate: row.return_date,
+      returnPhoto: row.return_photo,
       createdAt: row.created_at
     })));
   } catch (err) {
