@@ -127,16 +127,8 @@ export default async function assetFormPage({ id } = {}) {
                       <span class="material-icons-round" style="font-size:1.2rem; margin-right:4px;">photo_camera</span> 開啟相機
                     </button>
                   </div>
-                  <input type="file" class="form-input" id="detailPhotos" accept="image/*" multiple style="display:none;" onchange="
-                    const countSpan = document.getElementById('detailPhotosCount');
-                    if(this.files.length > 0) {
-                      countSpan.textContent = '已選擇 ' + this.files.length + ' 張照片';
-                      countSpan.style.display = 'inline';
-                    } else {
-                      countSpan.style.display = 'none';
-                    }
-                  " />
-                  <span id="detailPhotosCount" style="font-size: 0.85rem; color: var(--primary); display: none; margin-top: 8px;"></span>
+                  <input type="file" class="form-input" id="detailPhotos" accept="image/*" multiple style="display:none;" />
+                  <div id="new-detail-photos" style="margin-top:16px; display:none; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px;"></div>
                   <div id="existing-detail-photos" style="margin-top:16px; display:none; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px;"></div>
                 </div>
               </div>
@@ -161,6 +153,48 @@ export default async function assetFormPage({ id } = {}) {
   let selectedImageFile = null;
   let croppedThumbnailBlob = null;
   let cropperInstance = null;
+  let newDetailPhotos = [];
+
+  const detailPhotosInput = document.getElementById('detailPhotos');
+  const newDetailPhotosContainer = document.getElementById('new-detail-photos');
+
+  function renderNewDetailPhotos() {
+    if (newDetailPhotos.length === 0) {
+      newDetailPhotosContainer.style.display = 'none';
+      newDetailPhotosContainer.innerHTML = '';
+      return;
+    }
+    newDetailPhotosContainer.style.display = 'grid';
+    newDetailPhotosContainer.innerHTML = newDetailPhotos.map((file, index) => {
+      const url = URL.createObjectURL(file);
+      return `
+        <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--bg-surface); border: 1px dashed var(--primary); padding: 2px;">
+          <img src="${url}" alt="New Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;" />
+          <button type="button" class="icon-btn danger btn-remove-new-photo" data-index="${index}" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.5); color: #fff; width: 28px; height: 28px; border-radius: 14px; display: flex; align-items: center; justify-content: center; padding: 0;">
+            <span class="material-icons-round" style="font-size: 16px;">close</span>
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    newDetailPhotosContainer.querySelectorAll('.btn-remove-new-photo').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const index = parseInt(e.currentTarget.dataset.index, 10);
+        newDetailPhotos.splice(index, 1);
+        renderNewDetailPhotos();
+      });
+    });
+  }
+
+  detailPhotosInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      newDetailPhotos.push(...Array.from(e.target.files));
+      renderNewDetailPhotos();
+    }
+    e.target.value = ''; // reset so same file can be added again
+  });
 
   // 處理主要照片選擇與裁切
   const imageInput = document.getElementById('image');
@@ -447,7 +481,10 @@ export default async function assetFormPage({ id } = {}) {
         // Attach event listeners for delete
         detailPhotosContainer.querySelectorAll('.btn-delete-photo').forEach(btn => {
           btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const photoId = e.currentTarget.dataset.photoId;
+            const containerToRemove = e.currentTarget.parentElement;
             showConfirm({
               title: '刪除圖片',
               message: '確定要刪除這張照片嗎？',
@@ -457,7 +494,7 @@ export default async function assetFormPage({ id } = {}) {
                 try {
                   await assetsAPI.deleteDetailPhoto(id, photoId);
                   showToast('照片已刪除', 'success');
-                  e.currentTarget.parentElement.remove();
+                  containerToRemove.remove();
                   if (detailPhotosContainer.children.length === 0) {
                     detailPhotosContainer.style.display = 'none';
                   }
@@ -530,11 +567,10 @@ export default async function assetFormPage({ id } = {}) {
         await assetsAPI.update(id, formData);
         
         // upload detail photos if selected
-        const detailPhotosInput = document.getElementById('detailPhotos');
-        if (detailPhotosInput && detailPhotosInput.files.length > 0) {
+        if (newDetailPhotos.length > 0) {
           const detailFormData = new FormData();
-          for (let i = 0; i < detailPhotosInput.files.length; i++) {
-            detailFormData.append('detailPhotos', detailPhotosInput.files[i]);
+          for (let i = 0; i < newDetailPhotos.length; i++) {
+            detailFormData.append('detailPhotos', newDetailPhotos[i]);
           }
           await assetsAPI.uploadDetailPhotos(id, detailFormData);
         }
@@ -545,11 +581,10 @@ export default async function assetFormPage({ id } = {}) {
         const result = await assetsAPI.create(formData);
         
         // upload detail photos if selected
-        const detailPhotosInput = document.getElementById('detailPhotos');
-        if (detailPhotosInput && detailPhotosInput.files.length > 0) {
+        if (newDetailPhotos.length > 0) {
           const detailFormData = new FormData();
-          for (let i = 0; i < detailPhotosInput.files.length; i++) {
-            detailFormData.append('detailPhotos', detailPhotosInput.files[i]);
+          for (let i = 0; i < newDetailPhotos.length; i++) {
+            detailFormData.append('detailPhotos', newDetailPhotos[i]);
           }
           await assetsAPI.uploadDetailPhotos(result.id, detailFormData);
         }

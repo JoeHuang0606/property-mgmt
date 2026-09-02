@@ -117,7 +117,7 @@ router.get('/', async (req, res) => {
        LEFT JOIN categories c ON a.category_id = c.id
        LEFT JOIN users u ON a.created_by = u.id
        LEFT JOIN custodian_roles cr ON a.custodian_role_id = cr.id
-       LEFT JOIN users cu ON a.custodian = cu.username
+       LEFT JOIN users cu ON a.custodian = cu.display_name
        ${whereClause}
        ORDER BY a.${sortColumn} ${sortOrder}
        LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
@@ -248,7 +248,7 @@ router.get('/:id', async (req, res) => {
        LEFT JOIN categories c ON a.category_id = c.id
        LEFT JOIN users u ON a.created_by = u.id
        LEFT JOIN custodian_roles cr ON a.custodian_role_id = cr.id
-       LEFT JOIN users cu ON a.custodian = cu.username
+       LEFT JOIN users cu ON a.custodian = cu.display_name
        WHERE a.id = $1`,
       [req.params.id]
     );
