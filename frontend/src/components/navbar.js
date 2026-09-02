@@ -158,42 +158,84 @@ export function initNavbarEvents() {
       const file = e.target.files[0];
       if (!file) return;
 
-      const formData = new FormData();
-      formData.append('avatar', file);
-
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/auth/avatar', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.error || '上傳失敗');
-        }
-
-        const data = await response.json();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imgUrl = e.target.result;
         
-        // Update user in localStorage
-        const user = JSON.parse(localStorage.getItem('user'));
-        user.avatarUrl = data.avatarUrl;
-        localStorage.setItem('user', JSON.stringify(user));
+        let cropperInstance = null;
         
-        import('./toast.js').then(({ showToast }) => {
-          showToast('頭像上傳成功', 'success');
+        const modalContent = document.createElement('div');
+        modalContent.innerHTML = `
+          <div style="margin-bottom:1rem; max-height: 400px; overflow: hidden; background: #000; border-radius: var(--radius-md);">
+            <img id="avatar-cropper-image" src="${imgUrl}" style="max-width: 100%; display: block;" />
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
+            <button class="btn btn-ghost" id="avatar-cropper-cancel">取消</button>
+            <button class="btn btn-primary" id="avatar-cropper-save">確認裁切</button>
+          </div>
+        `;
+        
+        const { close } = showModal({ title: '裁切頭像', content: modalContent });
+        
+        const imageElement = modalContent.querySelector('#avatar-cropper-image');
+        cropperInstance = new Cropper(imageElement, {
+          aspectRatio: 1,
+          viewMode: 1,
+          autoCropArea: 1,
         });
         
-        // 重新整理頁面套用新頭像
-        setTimeout(() => window.location.reload(), 1000);
-      } catch (err) {
-        import('./toast.js').then(({ showToast }) => {
-          showToast(err.message, 'error');
+        modalContent.querySelector('#avatar-cropper-cancel').addEventListener('click', () => {
+          if (cropperInstance) cropperInstance.destroy();
+          close();
+          avatarUpload.value = '';
         });
-      }
+        
+        modalContent.querySelector('#avatar-cropper-save').addEventListener('click', () => {
+          const canvas = cropperInstance.getCroppedCanvas({
+            width: 256,
+            height: 256,
+          });
+          
+          canvas.toBlob(async (blob) => {
+            if (cropperInstance) cropperInstance.destroy();
+            close();
+            
+            const formData = new FormData();
+            formData.append('avatar', blob, 'avatar.jpg');
+
+            try {
+              const token = localStorage.getItem('token');
+              const response = await fetch('/api/auth/avatar', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                },
+                body: formData
+              });
+
+              if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || '上傳失敗');
+              }
+
+              const data = await response.json();
+              
+              const user = getUser();
+              user.avatarUrl = data.avatarUrl;
+              localStorage.setItem('user', JSON.stringify(user));
+              
+              showToast('頭像更新成功！', 'success');
+              
+              setTimeout(() => window.location.reload(), 1000);
+            } catch (err) {
+              showToast(err.message, 'error');
+            } finally {
+              avatarUpload.value = '';
+            }
+          }, 'image/jpeg', 0.9);
+        });
+      };
+      reader.readAsDataURL(file);
     });
   }
 }

@@ -16,7 +16,7 @@ router.use(authenticate);
 router.get('/', async (req, res) => {
   try {
     let query = `
-      SELECT u.id, u.username, u.display_name, u.role, u.created_at, u.updated_at,
+      SELECT u.id, u.username, u.display_name, u.role, u.created_at, u.updated_at, u.avatar_url,
              COALESCE(array_agg(ucr.role_id) FILTER (WHERE ucr.role_id IS NOT NULL), '{}') AS assigned_roles
       FROM users u
       LEFT JOIN user_custodian_roles ucr ON u.id = ucr.user_id
@@ -44,6 +44,7 @@ router.get('/', async (req, res) => {
       username: u.username,
       displayName: u.display_name,
       role: u.role,
+      avatarUrl: u.avatar_url,
       assignedRoles: u.assigned_roles,
       createdAt: u.created_at,
       updatedAt: u.updated_at,
@@ -123,6 +124,7 @@ router.post('/', authorize('admin', 'manager'), async (req, res) => {
       username: user.username,
       displayName: user.display_name,
       role: user.role,
+      avatarUrl: user.avatar_url,
       createdAt: user.created_at,
     });
   } catch (err) {

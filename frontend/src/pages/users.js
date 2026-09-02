@@ -70,7 +70,16 @@ async function loadUsers() {
             ${users.map(u => `
               <tr>
                 <td data-label="帳號"><code style="font-size:0.85rem;">${u.username}</code></td>
-                <td data-label="顯示名稱"><strong>${u.displayName}</strong></td>
+                <td data-label="顯示名稱">
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <div style="width:32px;height:32px;border-radius:var(--radius-pill);background:var(--primary-dark);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.9rem;overflow:hidden;flex-shrink:0;">
+                      ${u.avatarUrl
+                        ? `<img src="/api/uploads/${u.avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" />`
+                        : (u.displayName ? u.displayName.charAt(0).toUpperCase() : '?')}
+                    </div>
+                    <strong>${u.displayName}</strong>
+                  </div>
+                </td>
                 <td data-label="角色"><span class="badge badge-${u.role}">${roleText[u.role] || u.role}</span></td>
                 <td data-label="建立時間" style="color:var(--text-muted);font-size:0.85rem;">${new Date(u.createdAt).toLocaleString('zh-TW')}</td>
                 <td data-label="操作">
