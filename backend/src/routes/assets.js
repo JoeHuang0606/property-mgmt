@@ -643,8 +643,8 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('QR Codes');
 
-    // 8 items per row (15 columns: 8 for items, 7 for spacing)
-    for (let c = 1; c <= 15; c++) {
+    // 7 items per row (13 columns: 7 for items, 6 for spacing)
+    for (let c = 1; c <= 13; c++) {
       const colLetter = String.fromCharCode(64 + c);
       sheet.getColumn(colLetter).width = (c % 2 !== 0) ? 11 : 1.2;
     }
@@ -675,7 +675,7 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
       cell.font = { size: 9, bold: true };
 
       colIndex += 2;
-      if (colIndex > 15) {
+      if (colIndex > 13) {
         colIndex = 1;
         rowIndex += 2;
       }
