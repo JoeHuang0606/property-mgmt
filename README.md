@@ -55,6 +55,28 @@ docker compose up -d --build
 
 服務啟動後，請開啟瀏覽器前往 `http://localhost:4173`。
 
+### 🔄 如何更新到最新版本
+
+若您已經部署過舊版本，想更新到最新版本，請在您的伺服器執行以下指令：
+
+```bash
+cd property-mgmt
+
+# 1. 取得最新程式碼
+git fetch --all
+git checkout main
+git pull origin main
+
+# 2. 重新編譯並啟動 Docker 容器
+docker compose up -d --build
+
+# 3. 清理舊的無用映像檔 (選用)
+docker image prune -f
+```
+
+> **💡 資料會遺失嗎？**
+> 不會的！PostgreSQL 資料庫已經掛載在 Docker Volume（`pgdata`） 中，重新執行指令只會更新後端 API 和前端頁面，您的帳號和財產資料都會完整保留。
+
 ---
 
 ## 🔑 預設帳號
