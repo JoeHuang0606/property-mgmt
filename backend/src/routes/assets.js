@@ -293,8 +293,8 @@ router.post('/', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhot
   try {
     const { name, description, categoryId, location, custodian, custodianRoleId, custodyDate, returnDate } = req.body;
 
-    if (!name || !custodian || !custodyDate || !custodianRoleId) {
-      return res.status(400).json({ error: '請提供名稱、保管人、職類和保管日期' });
+    if (!name || !custodianRoleId || !custodyDate) {
+      return res.status(400).json({ error: '請提供名稱、職類和保管日期' });
     }
 
     if (custodian === 'Developer') {

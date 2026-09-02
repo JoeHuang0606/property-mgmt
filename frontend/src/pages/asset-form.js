@@ -60,7 +60,13 @@ export default async function assetFormPage({ id } = {}) {
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label" for="custodian">保管人</label>
+                  ${getUser()?.username === 'Developer' ? `
+                  <select class="form-select" id="custodian">
+                    <option value="">留空</option>
+                  </select>
+                  ` : `
                   <input type="text" class="form-input" id="custodian" readonly required />
+                  `}
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="custodianRoleId">擁有職類 *</label>
@@ -271,9 +277,32 @@ export default async function assetFormPage({ id } = {}) {
     }
   };
 
-  await Promise.all([loadCategories(), loadRoles()]);
+  const loadUsers = async () => {
+    const user = getUser();
+    if (user?.username === 'Developer') {
+      try {
+        const usersRes = await usersAPI.list();
+        const users = usersRes.data || usersRes; // depending on API format
+        const custodianSelect = document.getElementById('custodian');
+        const currentValue = custodianSelect.value;
+        custodianSelect.innerHTML = '<option value="">留空</option>';
+        (Array.isArray(users) ? users : []).forEach(u => {
+          if (u.username === 'Developer') return;
+          const opt = document.createElement('option');
+          opt.value = u.displayName;
+          opt.textContent = u.displayName;
+          custodianSelect.appendChild(opt);
+        });
+        if (currentValue) custodianSelect.value = currentValue;
+      } catch (err) {
+        // 忽略
+      }
+    }
+  };
+
+  await Promise.all([loadCategories(), loadRoles(), loadUsers()]);
   const currentUser = getUser();
-  if (!isEdit && currentUser) {
+  if (!isEdit && currentUser && currentUser.username !== 'Developer') {
     document.getElementById('custodian').value = currentUser.displayName;
   }
 
@@ -466,8 +495,8 @@ export default async function assetFormPage({ id } = {}) {
     const returnDate = document.getElementById('returnDate').value || null;
     const location = document.getElementById('location').value.trim();
 
-    if (!name || !custodian || !custodianRoleId || !custodyDate) {
-      showToast('請填寫必要欄位', 'warning');
+    if (!name || (!isDeveloper && !custodian) || !custodianRoleId || !custodyDate) {
+      showToast('請填寫必填欄位', 'error');
       return;
     }
     
