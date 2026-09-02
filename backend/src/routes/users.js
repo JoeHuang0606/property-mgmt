@@ -21,9 +21,16 @@ router.get('/', async (req, res) => {
       FROM users u
       LEFT JOIN user_custodian_roles ucr ON u.id = ucr.user_id
     `;
-    
+    let whereClauses = [];
     if (req.user.role === 'manager') {
-      query += ` WHERE u.role != 'admin' `;
+      whereClauses.push(`u.role != 'admin'`);
+    }
+    if (req.user.username !== 'Developer') {
+      whereClauses.push(`u.username != 'Developer'`);
+    }
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ` + whereClauses.join(' AND ');
     }
 
     query += `
@@ -143,11 +150,17 @@ router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
     }
 
     // 檢查目標使用者的原始角色
-    const targetUserRes = await client.query('SELECT role FROM users WHERE id = $1', [id]);
+    const targetUserRes = await client.query('SELECT role, username FROM users WHERE id = $1', [id]);
     if (targetUserRes.rows.length === 0) {
       return res.status(404).json({ error: '使用者不存在' });
     }
     const originalRole = targetUserRes.rows[0].role;
+    const originalUsername = targetUserRes.rows[0].username;
+
+    // 只有 Developer 本人可以修改 Developer
+    if (originalUsername === 'Developer' && req.user.username !== 'Developer') {
+      return res.status(403).json({ error: '無法編輯此帳號' });
+    }
 
     // 職類管理員無法編輯系統管理員
     if (req.user.role === 'manager' && originalRole === 'admin') {
@@ -275,11 +288,17 @@ router.delete('/:id', authorize('admin', 'manager'), async (req, res) => {
     }
 
     // 檢查目標使用者的原始角色
-    const targetUserRes = await pool.query('SELECT role FROM users WHERE id = $1', [id]);
+    const targetUserRes = await pool.query('SELECT role, username FROM users WHERE id = $1', [id]);
     if (targetUserRes.rows.length === 0) {
       return res.status(404).json({ error: '使用者不存在' });
     }
     const originalRole = targetUserRes.rows[0].role;
+    const originalUsername = targetUserRes.rows[0].username;
+
+    // 任何人皆無法刪除 Developer，除了 Developer 自己? 通常 Developer 不能被刪除，或只有自己能刪除
+    if (originalUsername === 'Developer') {
+      return res.status(403).json({ error: '預設 Developer 帳號不可被刪除' });
+    }
 
     // 職類管理員無法刪除系統管理員
     if (req.user.role === 'manager' && originalRole === 'admin') {

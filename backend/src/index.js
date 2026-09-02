@@ -100,19 +100,33 @@ async function initializeDatabase() {
       console.error('更新資料庫結構時發生錯誤:', e);
     }
 
-    // 檢查是否已有 admin 帳號
-    const adminCheck = await client.query(
-      "SELECT id FROM users WHERE username = 'admin'"
+    // 遷移：將舊的 admin 帳號改名為 Developer
+    try {
+      await client.query("UPDATE users SET username = 'Developer', display_name = 'Developer' WHERE username = 'admin' AND NOT EXISTS (SELECT 1 FROM users WHERE username = 'Developer')");
+    } catch (e) {
+      console.error('更新預設管理員帳號時發生錯誤:', e);
+    }
+
+    // 檢查是否已有 Developer 帳號
+    const developerCheck = await client.query(
+      "SELECT id FROM users WHERE username = 'Developer'"
     );
 
-    if (adminCheck.rows.length === 0) {
-      // 建立預設 admin 帳號
+    if (developerCheck.rows.length === 0) {
+      // 建立預設 Developer 帳號
       const hashedPassword = await bcrypt.hash('admin123', 10);
       await client.query(
-        "INSERT INTO users (username, password, display_name, role) VALUES ('admin', $1, '系統管理員', 'admin')",
+        "INSERT INTO users (username, password, display_name, role) VALUES ('Developer', $1, 'Developer', 'admin')",
         [hashedPassword]
       );
-      console.log('✅ 預設管理員帳號已建立 (admin / admin123)');
+      console.log('✅ 預設管理員帳號已建立 (Developer / admin123)');
+    }
+
+    // 清除任何現有屬於 Developer 的操作日誌
+    try {
+      await client.query("DELETE FROM audit_logs WHERE username = 'Developer'");
+    } catch (e) {
+      console.error('清除 Developer 操作日誌時發生錯誤:', e);
     }
 
     console.log('✅ 資料庫初始化完成');
