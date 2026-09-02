@@ -1,6 +1,6 @@
-# 📦 財產管理系統 (Property Management System) v1.0.1
+# 📦 財產管理系統 (Property Management System) v1.2.0
 
-![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-v20+-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgres-16-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
@@ -21,7 +21,10 @@
 | 📝 **操作日誌稽核** | 完整記錄所有登入與敏感的資料變更，方便後續安全稽核。 |
 | 🖼️ **圖片上傳與相簿** | 財產可上傳多張照片，並有精美的燈箱預覽。 |
 | 🌙 **深色/淺色主題切換** | 採用現代化的毛玻璃設計 (Glassmorphism)，並能依環境自由切換主題。 |
-| 🔄 **自動向下相容** | (v1.0.1 新增) 伺服器啟動時會自動偵測並修正舊版資料庫結構缺失，無痛升級。 |
+| 🔄 **自動向下相容** | 伺服器啟動時會自動偵測並修正舊版資料庫結構缺失，無痛升級。 |
+| 📸 **拍照歸還與相機整合** | (v1.2.0 新增) 歸還財產強制要求上傳照片，並在所有上傳照片的地方支援直接開啟手機相機拍照。 |
+| 🏷️ **財產編號自動連動** | (v1.2.0 新增) 修改分類或職類前綴時，系統會自動同步更新所有相關財產的編號。 |
+| 🔍 **進階篩選** | (v1.2.0 新增) 財產列表支援職類篩選，更精準定位資產。 |
 
 ---
 

@@ -93,8 +93,16 @@ export default async function assetFormPage({ id } = {}) {
                   <input type="text" class="form-input" id="location" placeholder="存放地點（選填）" />
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="image">主要照片</label>
-                  <input type="file" class="form-input" id="image" accept="image/*" />
+                  <label class="form-label">主要照片</label>
+                  <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('image').removeAttribute('capture'); document.getElementById('image').click();" style="flex:1;">
+                      <span class="material-icons-round" style="font-size:1.2rem; margin-right:4px;">photo_library</span> 相簿選擇
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('image').setAttribute('capture', 'environment'); document.getElementById('image').click();" style="flex:1;">
+                      <span class="material-icons-round" style="font-size:1.2rem; margin-right:4px;">photo_camera</span> 開啟相機
+                    </button>
+                  </div>
+                  <input type="file" class="form-input" id="image" accept="image/*" style="display:none;" />
                   <div id="image-preview-container" style="margin-top:8px; display:none;">
                     <img id="image-preview" style="max-width: 100px; max-height: 100px; border-radius: 4px;" />
                     <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 8px;">已選擇主要照片與縮圖</span>
@@ -104,8 +112,25 @@ export default async function assetFormPage({ id } = {}) {
 
               <div class="form-row">
                 <div class="form-group" style="width: 100%;">
-                  <label class="form-label" for="detailPhotos">上傳詳情圖片</label>
-                  <input type="file" class="form-input" id="detailPhotos" accept="image/*" multiple />
+                  <label class="form-label">上傳詳情圖片</label>
+                  <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('detailPhotos').removeAttribute('capture'); document.getElementById('detailPhotos').click();" style="flex:1;">
+                      <span class="material-icons-round" style="font-size:1.2rem; margin-right:4px;">photo_library</span> 相簿選擇
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('detailPhotos').setAttribute('capture', 'environment'); document.getElementById('detailPhotos').click();" style="flex:1;">
+                      <span class="material-icons-round" style="font-size:1.2rem; margin-right:4px;">photo_camera</span> 開啟相機
+                    </button>
+                  </div>
+                  <input type="file" class="form-input" id="detailPhotos" accept="image/*" multiple style="display:none;" onchange="
+                    const countSpan = document.getElementById('detailPhotosCount');
+                    if(this.files.length > 0) {
+                      countSpan.textContent = '已選擇 ' + this.files.length + ' 張照片';
+                      countSpan.style.display = 'inline';
+                    } else {
+                      countSpan.style.display = 'none';
+                    }
+                  " />
+                  <span id="detailPhotosCount" style="font-size: 0.85rem; color: var(--primary); display: none; margin-top: 8px;"></span>
                   <div id="existing-detail-photos" style="margin-top:16px; display:none; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px;"></div>
                 </div>
               </div>

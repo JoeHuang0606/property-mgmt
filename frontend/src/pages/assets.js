@@ -231,7 +231,7 @@ async function loadAssets() {
     const canManage = isManager();
 
     tableEl.innerHTML = `
-      <div class="table-wrap mobile-card-table">
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>

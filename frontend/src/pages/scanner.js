@@ -334,7 +334,24 @@ async function lookupAsset(code) {
             <p style="color:var(--text-secondary); font-size:0.95rem;">歸還財產前，請上傳最新的現況照片（必填）。</p>
             <div class="form-group">
               <label>上傳歸還照片 <span style="color:var(--danger);">*</span></label>
-              <input type="file" id="return-photo-input" accept="image/*" class="form-control" />
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('return-photo-input').removeAttribute('capture'); document.getElementById('return-photo-input').click();" style="flex:1;">
+                  <span class="material-icons-round" style="font-size:1.2rem; margin-right:4px;">photo_library</span> 相簿選擇
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('return-photo-input').setAttribute('capture', 'environment'); document.getElementById('return-photo-input').click();" style="flex:1;">
+                  <span class="material-icons-round" style="font-size:1.2rem; margin-right:4px;">photo_camera</span> 開啟相機
+                </button>
+              </div>
+              <input type="file" id="return-photo-input" accept="image/*" style="display:none;" onchange="
+                const nameSpan = document.getElementById('return-photo-name');
+                if(this.files.length > 0) {
+                  nameSpan.textContent = '已選擇: ' + this.files[0].name;
+                  nameSpan.style.display = 'block';
+                } else {
+                  nameSpan.style.display = 'none';
+                }
+              " />
+              <div id="return-photo-name" style="margin-top:8px; font-size:0.85rem; color:var(--primary); display:none;"></div>
             </div>
           </div>
         `;
