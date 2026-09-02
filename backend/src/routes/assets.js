@@ -643,11 +643,11 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('QR Codes');
 
-    sheet.getColumn('A').width = 11;
-    sheet.getColumn('B').width = 1.2;
-    sheet.getColumn('C').width = 11;
-    sheet.getColumn('D').width = 1.2;
-    sheet.getColumn('E').width = 11;
+    // 8 items per row (15 columns: 8 for items, 7 for spacing)
+    for (let c = 1; c <= 15; c++) {
+      const colLetter = String.fromCharCode(64 + c);
+      sheet.getColumn(colLetter).width = (c % 2 !== 0) ? 11 : 1.2;
+    }
 
     let rowIndex = 1;
     let colIndex = 1;
@@ -675,7 +675,7 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
       cell.font = { size: 9, bold: true };
 
       colIndex += 2;
-      if (colIndex > 5) {
+      if (colIndex > 15) {
         colIndex = 1;
         rowIndex += 2;
       }
