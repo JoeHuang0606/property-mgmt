@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   username      VARCHAR(50) UNIQUE NOT NULL,
   password      VARCHAR(255) NOT NULL,
   display_name  VARCHAR(100) NOT NULL,
+  avatar_url    TEXT,
   role          VARCHAR(20) NOT NULL DEFAULT 'user'
                 CHECK (role IN ('admin', 'manager', 'user')),
   created_at    TIMESTAMPTZ DEFAULT NOW(),

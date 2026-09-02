@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const authenticate = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ router.post('/login', async (req, res) => {
 
     // 查詢使用者
     const result = await pool.query(
-      'SELECT id, username, password, display_name, role FROM users WHERE username = $1',
+      'SELECT id, username, password, display_name, avatar_url, role FROM users WHERE username = $1',
       [username]
     );
 
@@ -48,6 +49,7 @@ router.post('/login', async (req, res) => {
         id: user.id,
         username: user.username,
         displayName: user.display_name,
+        avatarUrl: user.avatar_url,
         role: user.role,
         assignedRoles
       },
@@ -67,6 +69,7 @@ router.post('/login', async (req, res) => {
         id: user.id,
         username: user.username,
         displayName: user.display_name,
+        avatarUrl: user.avatar_url,
         role: user.role,
         assignedRoles
       },
@@ -150,6 +153,33 @@ router.get('/me', authenticate, async (req, res) => {
     });
   } catch (err) {
     console.error('取得使用者資訊錯誤:', err);
+    res.status(500).json({ error: '伺服器內部錯誤' });
+  }
+});
+
+/**
+ * POST /api/auth/avatar
+ * 上傳使用者頭像
+ */
+router.post('/avatar', authenticate, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: '請提供要上傳的圖片' });
+    }
+
+    const avatarUrl = req.file.filename;
+
+    await pool.query(
+      'UPDATE users SET avatar_url = $1 WHERE id = $2',
+      [avatarUrl, req.user.id]
+    );
+
+    res.json({
+      message: '頭像上傳成功',
+      avatarUrl
+    });
+  } catch (err) {
+    console.error('上傳頭像錯誤:', err);
     res.status(500).json({ error: '伺服器內部錯誤' });
   }
 });

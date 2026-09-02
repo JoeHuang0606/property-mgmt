@@ -1509,7 +1509,8 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   top: 100%;
   right: 0;
   margin-top: 6px;
-  background: var(--bg-base);
+  background: var(--bg-surface);
+  backdrop-filter: blur(24px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);

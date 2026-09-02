@@ -17,6 +17,11 @@ export function renderNavbar(title = '') {
     manager: '職類管理員',
     user: '使用者',
   };
+  const initial = user?.displayName ? user.displayName.charAt(0).toUpperCase() : '?';
+
+  const avatarContent = user?.avatarUrl
+    ? `<img src="/api/uploads/${user.avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius-pill);" />`
+    : initial;
 
   return `
     <header class="navbar" id="navbar">
@@ -39,7 +44,7 @@ export function renderNavbar(title = '') {
 
         <div class="dropdown" id="user-dropdown">
           <div class="navbar-user" id="user-menu-btn">
-            <div class="navbar-avatar">${initial}</div>
+            <div class="navbar-avatar">${avatarContent}</div>
             <div>
               <div class="navbar-username">${user?.displayName || ''}</div>
               <div class="navbar-role">${roleName[user?.role] || ''}</div>
@@ -47,6 +52,11 @@ export function renderNavbar(title = '') {
             <span class="material-icons-round" style="font-size:1.2rem;color:var(--text-muted)">expand_more</span>
           </div>
           <div class="dropdown-menu" id="user-menu" style="display:none;">
+            <input type="file" id="avatar-upload" style="display:none;" accept="image/*" />
+            <button class="dropdown-item" id="btn-change-avatar">
+              <span class="material-icons-round">account_circle</span>
+              變更頭像
+            </button>
             <button class="dropdown-item" id="btn-change-password">
               <span class="material-icons-round">lock</span>
               變更密碼
@@ -136,6 +146,57 @@ export function initNavbarEvents() {
   const changePwBtn = document.getElementById('btn-change-password');
   if (changePwBtn) {
     changePwBtn.addEventListener('click', showChangePasswordModal);
+  }
+
+  // 變更頭像
+  const changeAvatarBtn = document.getElementById('btn-change-avatar');
+  const avatarUpload = document.getElementById('avatar-upload');
+  if (changeAvatarBtn && avatarUpload) {
+    changeAvatarBtn.addEventListener('click', () => {
+      avatarUpload.click();
+    });
+
+    avatarUpload.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/auth/avatar', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || '上傳失敗');
+        }
+
+        const data = await response.json();
+        
+        // Update user in localStorage
+        const user = JSON.parse(localStorage.getItem('user'));
+        user.avatarUrl = data.avatarUrl;
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        import('./toast.js').then(({ showToast }) => {
+          showToast('頭像上傳成功', 'success');
+        });
+        
+        // 重新整理頁面套用新頭像
+        setTimeout(() => window.location.reload(), 1000);
+      } catch (err) {
+        import('./toast.js').then(({ showToast }) => {
+          showToast(err.message, 'error');
+        });
+      }
+    });
   }
 }
 
