@@ -1,6 +1,6 @@
-# 📦 財產管理系統 (Property Management System) v1.2.2
+# 📦 財產管理系統 (Property Management System) v1.3.0
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-v20+-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgres-16-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
@@ -26,6 +26,8 @@
 | 🏷️ **財產編號自動連動** | (v1.2.0 新增) 修改分類或職類前綴時，系統會自動同步更新所有相關財產的編號。 |
 | 🔍 **進階篩選** | (v1.2.0 新增) 財產列表支援職類篩選，更精準定位資產。 |
 | 📋 **進階日誌與 QR Code 優化** | (v1.2.2 新增) 操作日誌支援特定人員篩選與自訂分頁跳轉；QR Code 匯出表單優化為 2x3cm 含名稱排版。 |
+| 🛡️ **Developer 權限防護** | (v1.3.0 新增) Developer 帳號全面隱形，無法被選為保管人，其操作也不會留存在操作日誌中，增強系統隱蔽性。 |
+| ❌ **已歸還自動防呆** | (v1.3.0 新增) 已歸還的財產在清單與詳細頁面中，保管人欄位會自動切換為「-」，一目了然。 |
 
 ---
 
