@@ -28,7 +28,7 @@ export default async function assetsPage() {
               <h2 class="page-title">財產列表</h2>
               <p class="page-subtitle">管理所有組織財產</p>
             </div>
-            <div style="display: flex; gap: 12px;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
               ${isManager() ? `
                 <button class="btn btn-secondary" id="btn-export-qrcodes" disabled>
                   <span class="material-icons-round">qr_code_scanner</span>
@@ -231,7 +231,7 @@ async function loadAssets() {
     const canManage = isManager();
 
     tableEl.innerHTML = `
-      <div class="table-wrap">
+      <div class="table-wrap mobile-card-table">
         <table>
           <thead>
             <tr>

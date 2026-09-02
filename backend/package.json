@@ -1,6 +1,6 @@
 {
   "name": "property-mgmt-backend",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "財產管理系統後端 API",
   "main": "src/index.js",
   "scripts": {
