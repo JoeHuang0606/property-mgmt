@@ -74,6 +74,7 @@ router.post('/', authorize('admin', 'manager'), async (req, res) => {
  * 修改分類（admin / manager）
  */
 router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
     const { name, prefix } = req.body;
@@ -91,22 +92,54 @@ router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
       return res.status(400).json({ error: '分類前綴只能包含大寫英文' });
     }
 
-    const result = await pool.query(
+    // 先取得舊前綴
+    const oldResult = await client.query('SELECT prefix FROM categories WHERE id = $1', [id]);
+    if (oldResult.rows.length === 0) {
+      client.release();
+      return res.status(404).json({ error: '分類不存在' });
+    }
+    const oldPrefix = oldResult.rows[0].prefix;
+
+    await client.query('BEGIN');
+
+    const result = await client.query(
       'UPDATE categories SET name = $1, prefix = $2 WHERE id = $3 RETURNING id, name, prefix',
       [name.trim(), cleanPrefix, id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: '分類不存在' });
+    // 前綴變更時，更新所有相關財產的編號和 QR Code
+    if (oldPrefix !== cleanPrefix) {
+      const assets = await client.query(
+        'SELECT id, asset_code FROM assets WHERE category_id = $1',
+        [id]
+      );
+
+      for (const asset of assets.rows) {
+        // 替換編號中的舊分類前綴為新前綴
+        const newCode = asset.asset_code.replace(
+          new RegExp(`-${oldPrefix}-`),
+          `-${cleanPrefix}-`
+        );
+        const { generateQRCode } = require('../services/qrcode');
+        const qrCode = await generateQRCode(newCode);
+        await client.query(
+          'UPDATE assets SET asset_code = $1, qr_code = $2, updated_at = NOW() WHERE id = $3',
+          [newCode, qrCode, asset.id]
+        );
+      }
     }
 
+    await client.query('COMMIT');
     res.json(result.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     if (err.code === '23505') {
       return res.status(409).json({ error: '分類名稱已存在' });
     }
     console.error('修改分類錯誤:', err);
     res.status(500).json({ error: '伺服器內部錯誤' });
+  } finally {
+    client.release();
   }
 });
 
