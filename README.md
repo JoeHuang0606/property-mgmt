@@ -1,6 +1,6 @@
-# 📦 財產管理系統 (Property Management System) v1.2.1
+# 📦 財產管理系統 (Property Management System) v1.2.2
 
-![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
 ![Node](https://img.shields.io/badge/node-v20+-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgres-16-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
@@ -25,6 +25,7 @@
 | 📸 **拍照歸還與相機整合** | (v1.2.0 新增) 歸還財產強制要求上傳照片，並在所有上傳照片的地方支援直接開啟手機相機拍照。 |
 | 🏷️ **財產編號自動連動** | (v1.2.0 新增) 修改分類或職類前綴時，系統會自動同步更新所有相關財產的編號。 |
 | 🔍 **進階篩選** | (v1.2.0 新增) 財產列表支援職類篩選，更精準定位資產。 |
+| 📋 **進階日誌與 QR Code 優化** | (v1.2.2 新增) 操作日誌支援特定人員篩選與自訂分頁跳轉；QR Code 匯出表單優化為 2x3cm 含名稱排版。 |
 
 ---
 

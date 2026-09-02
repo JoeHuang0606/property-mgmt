@@ -1,12 +1,13 @@
 /**
  * 操作日誌頁面（僅 admin）
  */
-import { auditAPI } from '../api.js';
+import { auditAPI, usersAPI } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
 import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
 
 let currentPage = 1;
+let currentLimit = 30;
 
 export default async function auditLogPage() {
   const app = document.getElementById('app');
@@ -38,6 +39,15 @@ export default async function auditLogPage() {
               <option value="assets">財產</option>
               <option value="users">使用者</option>
             </select>
+            <select class="filter-select" id="filter-user">
+              <option value="">全部人員</option>
+            </select>
+            <select class="filter-select" id="filter-limit">
+              <option value="10">每頁 10 筆</option>
+              <option value="30" selected>每頁 30 筆</option>
+              <option value="50">每頁 50 筆</option>
+              <option value="100">每頁 100 筆</option>
+            </select>
           </div>
 
           <div id="audit-timeline">
@@ -45,6 +55,10 @@ export default async function auditLogPage() {
           </div>
 
           <div id="audit-pagination"></div>
+          <div id="audit-page-jump" style="text-align: center; margin-top: 12px; display: none;">
+            <input type="number" id="jump-page-input" class="form-input" style="width: 80px; display: inline-block; padding: 4px 8px;" min="1" placeholder="頁碼">
+            <button id="jump-page-btn" class="btn btn-primary" style="padding: 4px 12px; margin-left: 8px;">跳轉</button>
+          </div>
         </div>
       </main>
     </div>
@@ -63,7 +77,43 @@ export default async function auditLogPage() {
     loadAuditLog();
   });
 
+  document.getElementById('filter-user').addEventListener('change', () => {
+    currentPage = 1;
+    loadAuditLog();
+  });
+
+  document.getElementById('filter-limit').addEventListener('change', (e) => {
+    currentLimit = parseInt(e.target.value);
+    currentPage = 1;
+    loadAuditLog();
+  });
+
+  document.getElementById('jump-page-btn').addEventListener('click', () => {
+    const jumpInput = document.getElementById('jump-page-input');
+    const targetPage = parseInt(jumpInput.value);
+    if (targetPage && targetPage > 0) {
+      currentPage = targetPage;
+      loadAuditLog();
+    }
+  });
+
+  await loadUsersFilter();
   await loadAuditLog();
+}
+
+async function loadUsersFilter() {
+  try {
+    const users = await usersAPI.list();
+    const userSelect = document.getElementById('filter-user');
+    users.forEach(u => {
+      const option = document.createElement('option');
+      option.value = u.id;
+      option.textContent = u.displayName || u.username;
+      userSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error('Failed to load users for filter', err);
+  }
 }
 
 async function loadAuditLog() {
@@ -72,13 +122,16 @@ async function loadAuditLog() {
 
   const action = document.getElementById('filter-action')?.value;
   const target = document.getElementById('filter-target')?.value;
+  const userId = document.getElementById('filter-user')?.value;
+  const jumpContainer = document.getElementById('audit-page-jump');
 
   try {
     const data = await auditAPI.list({
       page: currentPage,
-      limit: 30,
+      limit: currentLimit,
       action,
       target,
+      user_id: userId,
     });
 
     if (data.data.length === 0) {
@@ -89,6 +142,7 @@ async function loadAuditLog() {
         </div>
       `;
       paginationEl.innerHTML = '';
+      jumpContainer.style.display = 'none';
       return;
     }
 
@@ -173,8 +227,13 @@ async function loadAuditLog() {
           loadAuditLog();
         });
       });
+      
+      jumpContainer.style.display = 'block';
+      document.getElementById('jump-page-input').max = totalPages;
+      document.getElementById('jump-page-input').value = page;
     } else {
       paginationEl.innerHTML = '';
+      jumpContainer.style.display = 'none';
     }
   } catch (err) {
     timelineEl.innerHTML = `
