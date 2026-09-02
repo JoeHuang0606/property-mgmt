@@ -62,8 +62,13 @@ export function initParticles() {
     }
   }
 
+  let animationId = null;
+  let isAnimated = localStorage.getItem('bg-animated') !== 'false';
+  document.documentElement.setAttribute('data-bg-animated', isAnimated ? 'true' : 'false');
+
   function animate() {
-    requestAnimationFrame(animate);
+    if (!isAnimated) return;
+    animationId = requestAnimationFrame(animate);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const colors = getThemeColors();
@@ -103,11 +108,22 @@ export function initParticles() {
     mouse.y = -1000;
   });
 
-  // Listen for theme changes
+  // Listen for theme and bg-animation changes
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.attributeName === 'data-theme') {
         isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+      }
+      if (mutation.attributeName === 'data-bg-animated') {
+        const newAnimated = document.documentElement.getAttribute('data-bg-animated') !== 'false';
+        if (newAnimated && !isAnimated) {
+          isAnimated = true;
+          animate();
+        } else if (!newAnimated && isAnimated) {
+          isAnimated = false;
+          if (animationId) cancelAnimationFrame(animationId);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
       }
     });
   });
@@ -115,5 +131,9 @@ export function initParticles() {
 
   resize();
   init();
-  animate();
+  if (isAnimated) {
+    animate();
+  } else {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
 }

@@ -27,6 +27,11 @@ export function renderNavbar(title = '') {
         <h1 class="navbar-title">${title}</h1>
       </div>
       <div class="navbar-actions">
+        <!-- 動態背景切換按鈕 -->
+        <button class="bg-anim-toggle" id="bg-anim-toggle" aria-label="切換動態背景" style="background:transparent;border:none;color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:var(--radius-pill);transition:var(--transition);">
+          <span class="material-icons-round" id="bg-anim-icon">animation</span>
+        </button>
+
         <!-- 佈景主題切換按鈕 -->
         <button class="theme-toggle" id="theme-toggle" aria-label="切換深淺色模式" style="background:transparent;border:none;color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:var(--radius-pill);transition:var(--transition);">
           <span class="material-icons-round" id="theme-icon">light_mode</span>
@@ -63,6 +68,24 @@ export function initNavbarEvents() {
   const menuToggle = document.getElementById('menu-toggle');
   if (menuToggle) {
     menuToggle.addEventListener('click', toggleSidebar);
+  }
+
+  // 動態背景切換
+  const bgAnimToggle = document.getElementById('bg-anim-toggle');
+  const bgAnimIcon = document.getElementById('bg-anim-icon');
+  if (bgAnimToggle && bgAnimIcon) {
+    // 初始化動態背景狀態
+    const currentBgAnimated = localStorage.getItem('bg-animated') !== 'false';
+    document.documentElement.setAttribute('data-bg-animated', currentBgAnimated ? 'true' : 'false');
+    bgAnimIcon.textContent = currentBgAnimated ? 'animation' : 'blur_off';
+
+    bgAnimToggle.addEventListener('click', () => {
+      const isAnimated = document.documentElement.getAttribute('data-bg-animated') !== 'false';
+      const newAnimated = !isAnimated;
+      document.documentElement.setAttribute('data-bg-animated', newAnimated ? 'true' : 'false');
+      localStorage.setItem('bg-animated', newAnimated ? 'true' : 'false');
+      bgAnimIcon.textContent = newAnimated ? 'animation' : 'blur_off';
+    });
   }
 
   // 佈景主題切換
