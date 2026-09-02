@@ -26,9 +26,9 @@ app.use(express.json({ limit: '50mb' })); // 增大 JSON 上限以支援大檔�
 
 // 登入端點限流
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 分鐘
+  windowMs: 1 * 60 * 1000, // 1 分鐘
   max: 20, // 最多 20 次嘗試
-  message: { error: '登入嘗試次數過多，請 15 分鐘後再試' },
+  message: { error: '登入嘗試次數過多，請 1 分鐘後再試' },
 });
 
 // 通用限流
