@@ -79,6 +79,14 @@ sudo docker image prune -f
 > ```bash
 > git config --global --add safe.directory /opt/property-mgmt
 > ```
+> 
+> **💡 常見錯誤排除 (無法 Pull 最新程式碼)**
+> 如果在執行 `git pull origin main` 時遇到 `error: Your local changes to the following files would be overwritten by merge`，這是因為您在伺服器上修改過密碼 (`docker-compose.yml`)。請改用以下指令來保留您的密碼並更新：
+> ```bash
+> git stash
+> git pull origin main
+> git stash pop
+> ```
 
 > **💡 資料會遺失嗎？**
 > 不會的！PostgreSQL 資料庫已經掛載在 Docker Volume（`pgdata`） 中，重新執行指令只會更新後端 API 和前端頁面，您的帳號和財產資料都會完整保留。
