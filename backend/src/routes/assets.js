@@ -64,6 +64,7 @@ router.get('/', async (req, res) => {
       limit = 20,
       search,
       category_id,
+      custodian_role_id,
       custodian,
       sort = 'created_at',
       order = 'DESC',
@@ -83,6 +84,11 @@ router.get('/', async (req, res) => {
     if (category_id) {
       conditions.push(`a.category_id = $${paramIndex++}`);
       values.push(parseInt(category_id));
+    }
+
+    if (custodian_role_id) {
+      conditions.push(`a.custodian_role_id = $${paramIndex++}`);
+      values.push(parseInt(custodian_role_id));
     }
 
     if (custodian) {

@@ -1,7 +1,7 @@
 /**
  * 財產列表頁面
  */
-import { assetsAPI, categoriesAPI } from '../api.js';
+import { assetsAPI, categoriesAPI, rolesAPI } from '../api.js';
 import { isManager, isAdmin, getUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { showConfirm } from '../components/modal.js';
@@ -11,6 +11,7 @@ import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
 let currentPage = 1;
 let currentSearch = '';
 let currentCategory = '';
+let currentRole = '';
 let selectedAssetIds = new Set();
 
 export default async function assetsPage() {
@@ -54,6 +55,10 @@ export default async function assetsPage() {
             <select class="filter-select" id="filter-category">
               <option value="">全部分類</option>
             </select>
+
+            <select class="filter-select" id="filter-role">
+              <option value="">全部職類</option>
+            </select>
           </div>
 
           <div id="assets-table">
@@ -84,6 +89,21 @@ export default async function assetsPage() {
     // 忽略
   }
 
+  // 載入職類下拉選項
+  try {
+    const roles = await rolesAPI.list();
+    const roleSelect = document.getElementById('filter-role');
+    roles.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = r.name;
+      if (String(r.id) === currentRole) opt.selected = true;
+      roleSelect.appendChild(opt);
+    });
+  } catch (err) {
+    // 忽略
+  }
+
   // 事件綁定
   let searchTimer;
   document.getElementById('search-input').addEventListener('input', (e) => {
@@ -99,6 +119,12 @@ export default async function assetsPage() {
 
   document.getElementById('filter-category').addEventListener('change', (e) => {
     currentCategory = e.target.value;
+    currentPage = 1;
+    loadAssets();
+  });
+
+  document.getElementById('filter-role').addEventListener('change', (e) => {
+    currentRole = e.target.value;
     currentPage = 1;
     loadAssets();
   });
@@ -187,6 +213,7 @@ async function loadAssets() {
       limit: 15,
       search: currentSearch,
       category_id: currentCategory,
+      custodian_role_id: currentRole,
     });
 
     if (data.data.length === 0) {
