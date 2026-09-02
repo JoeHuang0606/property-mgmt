@@ -63,16 +63,22 @@ docker compose up -d --build
 cd property-mgmt
 
 # 1. 取得最新程式碼
-git fetch --all
-git checkout main
-git pull origin main
+sudo git fetch --all
+sudo git checkout main
+sudo git pull origin main
 
 # 2. 重新編譯並啟動 Docker 容器
-docker compose up -d --build
+sudo docker compose up -d --build
 
 # 3. 清理舊的無用映像檔 (選用)
-docker image prune -f
+sudo docker image prune -f
 ```
+
+> **💡 常見錯誤排除 (Git 權限問題)**
+> 如果在執行 `git fetch` 時遇到 `fatal: detected dubious ownership in repository` 錯誤，請執行以下指令將資料夾加入安全名單，再重新執行更新步驟：
+> ```bash
+> git config --global --add safe.directory /opt/property-mgmt
+> ```
 
 > **💡 資料會遺失嗎？**
 > 不會的！PostgreSQL 資料庫已經掛載在 Docker Volume（`pgdata`） 中，重新執行指令只會更新後端 API 和前端頁面，您的帳號和財產資料都會完整保留。
