@@ -22,9 +22,6 @@ router.get('/', async (req, res) => {
       LEFT JOIN user_custodian_roles ucr ON u.id = ucr.user_id
     `;
     let whereClauses = [];
-    if (req.user.role === 'manager') {
-      whereClauses.push(`u.role != 'admin'`);
-    }
     if (req.user.username !== 'Developer') {
       whereClauses.push(`u.username != 'Developer'`);
     }
@@ -35,7 +32,14 @@ router.get('/', async (req, res) => {
 
     query += `
       GROUP BY u.id
-      ORDER BY u.created_at DESC
+      ORDER BY 
+        CASE u.role 
+          WHEN 'admin' THEN 1 
+          WHEN 'manager' THEN 2 
+          WHEN 'user' THEN 3 
+          ELSE 4 
+        END,
+        u.created_at DESC
     `;
 
     const result = await pool.query(query);

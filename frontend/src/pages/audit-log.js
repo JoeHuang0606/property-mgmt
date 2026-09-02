@@ -153,6 +153,10 @@ async function loadAuditLog() {
       LOGIN: 'login',
       CHANGE_PASSWORD: 'lock',
       EXPORT: 'download',
+      TAKE_CUSTODY: 'assignment_ind',
+      RETURN: 'keyboard_return',
+      SYSTEM_BACKUP: 'backup',
+      FORCE_RETURN: 'assignment_returned',
     };
 
     const actionNames = {
@@ -162,11 +166,17 @@ async function loadAuditLog() {
       LOGIN: '登入',
       CHANGE_PASSWORD: '變更密碼',
       EXPORT: '匯出',
+      TAKE_CUSTODY: '領取保管',
+      RETURN: '歸還',
+      SYSTEM_BACKUP: '系統備份',
+      FORCE_RETURN: '強制歸還',
     };
 
     const targetNames = {
       assets: '財產',
       users: '使用者',
+      categories: '類別',
+      roles: '職類',
     };
 
     timelineEl.innerHTML = `
@@ -190,8 +200,15 @@ async function loadAuditLog() {
                   </span>
                   <strong>${log.userDisplayName || log.username}</strong>
                   ${actionNames[log.action] || log.action}了
-                  ${targetNames[log.target] || log.target || ''}
-                  ${log.targetId ? `#${log.targetId}` : ''}
+                  ${(() => {
+                    if (log.target === 'assets' && log.targetAssetCode) {
+                      return `財產 ${log.targetAssetCode} ${log.targetAssetName}`;
+                    }
+                    if (log.target === 'users' && log.targetUserName) {
+                      return `使用者 ${log.targetUserName}`;
+                    }
+                    return log.targetId ? `${targetNames[log.target] || log.target || ''} #${log.targetId}` : (targetNames[log.target] || log.target || '');
+                  })()}
                 </div>
                 ${detailText ? `<div class="timeline-details">${detailText}</div>` : ''}
               </div>
