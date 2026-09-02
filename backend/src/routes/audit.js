@@ -24,22 +24,22 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    const conditions = [`username != 'Developer'`];
+    const conditions = [`al.username != 'Developer'`];
     const values = [];
     let paramIndex = 1;
 
     if (action) {
-      conditions.push(`action = $${paramIndex++}`);
+      conditions.push(`al.action = $${paramIndex++}`);
       values.push(action);
     }
 
     if (target) {
-      conditions.push(`target = $${paramIndex++}`);
+      conditions.push(`al.target = $${paramIndex++}`);
       values.push(target);
     }
 
     if (user_id) {
-      conditions.push(`user_id = $${paramIndex++}`);
+      conditions.push(`al.user_id = $${paramIndex++}`);
       values.push(parseInt(user_id));
     }
 
@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
 
     // 總數
     const countResult = await pool.query(
-      `SELECT COUNT(*) FROM audit_logs ${whereClause}`,
+      `SELECT COUNT(*) FROM audit_logs al ${whereClause}`,
       values
     );
     const total = parseInt(countResult.rows[0].count);
