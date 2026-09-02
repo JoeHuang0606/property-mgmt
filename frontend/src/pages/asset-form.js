@@ -62,7 +62,7 @@ export default async function assetFormPage({ id } = {}) {
                   <label class="form-label" for="custodian">保管人</label>
                   ${getUser()?.username === 'Developer' ? `
                   <select class="form-select" id="custodian">
-                    <option value="">留空</option>
+                    <option value="-">留空</option>
                   </select>
                   ` : `
                   <input type="text" class="form-input" id="custodian" readonly required />
@@ -285,7 +285,7 @@ export default async function assetFormPage({ id } = {}) {
         const users = usersRes.data || usersRes; // depending on API format
         const custodianSelect = document.getElementById('custodian');
         const currentValue = custodianSelect.value;
-        custodianSelect.innerHTML = '<option value="">留空</option>';
+        custodianSelect.innerHTML = '<option value="-">留空</option>';
         (Array.isArray(users) ? users : []).forEach(u => {
           if (u.username === 'Developer') return;
           const opt = document.createElement('option');
@@ -489,7 +489,7 @@ export default async function assetFormPage({ id } = {}) {
     const name = document.getElementById('name').value.trim();
     const description = document.getElementById('description').value.trim();
     const categoryId = document.getElementById('categoryId').value || null;
-    const custodian = document.getElementById('custodian').value.trim();
+    let custodian = document.getElementById('custodian').value.trim();
     const custodianRoleId = document.getElementById('custodianRoleId').value || null;
     const custodyDate = document.getElementById('custodyDate').value;
     const returnDate = document.getElementById('returnDate').value || null;
@@ -499,6 +499,10 @@ export default async function assetFormPage({ id } = {}) {
     if (!name || (!isDeveloper && !custodian) || !custodianRoleId || !custodyDate) {
       showToast('請填寫必填欄位', 'error');
       return;
+    }
+
+    if (isDeveloper && !custodian) {
+      custodian = '-';
     }
     
     const formData = new FormData();
