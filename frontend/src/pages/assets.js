@@ -12,6 +12,7 @@ let currentPage = 1;
 let currentSearch = '';
 let currentCategory = '';
 let currentRole = '';
+let isMyAssetsOnly = false;
 let selectedAssetIds = new Set();
 
 export default async function assetsPage() {
@@ -59,6 +60,11 @@ export default async function assetsPage() {
             <select class="filter-select" id="filter-role">
               <option value="">全部職類</option>
             </select>
+
+            <label class="filter-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-secondary); user-select: none;">
+              <input type="checkbox" id="filter-my-assets" ${isMyAssetsOnly ? 'checked' : ''} />
+              只顯示我的財產
+            </label>
           </div>
 
           <div id="assets-table">
@@ -128,6 +134,15 @@ export default async function assetsPage() {
     currentPage = 1;
     loadAssets();
   });
+
+  const myAssetsCb = document.getElementById('filter-my-assets');
+  if (myAssetsCb) {
+    myAssetsCb.addEventListener('change', (e) => {
+      isMyAssetsOnly = e.target.checked;
+      currentPage = 1;
+      loadAssets();
+    });
+  }
 
   const exportBtn = document.getElementById('btn-export-qrcodes');
   if (exportBtn) {
@@ -208,13 +223,22 @@ async function loadAssets() {
   const paginationEl = document.getElementById('assets-pagination');
 
   try {
-    const data = await assetsAPI.list({
+    const queryParams = {
       page: currentPage,
       limit: 15,
       search: currentSearch,
       category_id: currentCategory,
       custodian_role_id: currentRole,
-    });
+    };
+
+    if (isMyAssetsOnly) {
+      const user = getUser();
+      if (user) {
+        queryParams.custodian = user.displayName;
+      }
+    }
+
+    const data = await assetsAPI.list(queryParams);
 
     if (data.data.length === 0) {
       tableEl.innerHTML = `
