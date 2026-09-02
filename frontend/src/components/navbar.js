@@ -17,8 +17,6 @@ export function renderNavbar(title = '') {
     manager: '職類管理員',
     user: '使用者',
   };
-  const initial = user?.displayName ? user.displayName.charAt(0).toUpperCase() : '?';
-
   const avatarContent = user?.avatarUrl
     ? `<img src="/api/uploads/${user.avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius-pill);" />`
     : initial;
