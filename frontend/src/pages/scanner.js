@@ -197,13 +197,15 @@ async function lookupAsset(code) {
       const history = await assetsAPI.getHistory(asset.id);
       if (history.length > 0) {
         historyHtml = `
-          <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
-            <h4 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--text-primary); display:flex; align-items:center; gap:6px;">
-              <span class="material-icons-round" style="font-size: 1.1rem; color:var(--primary-light);">history</span>
-              保管歷史紀錄
-            </h4>
-            <div style="max-height: 200px; overflow-y: auto; padding-right: 4px;" class="custom-scrollbar">
-              <table class="table" style="font-size: 0.85rem; margin: 0;">
+          <div class="table-wrap" style="margin-top: 16px;">
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-glass);">
+              <h4 style="margin: 0; font-size: 0.95rem; color: var(--text-primary); display:flex; align-items:center; gap:6px;">
+                <span class="material-icons-round" style="font-size: 1.1rem; color:var(--primary-light);">history</span>
+                保管歷史紀錄
+              </h4>
+            </div>
+            <div style="max-height: 200px; overflow-y: auto;" class="custom-scrollbar">
+              <table style="font-size: 0.85rem; margin: 0;">
                 <thead>
                   <tr>
                     <th>保管人</th>

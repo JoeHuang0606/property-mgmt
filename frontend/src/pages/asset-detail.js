@@ -56,13 +56,15 @@ function renderDetail(a, history = []) {
   let historyHtml = '';
   if (history.length > 0) {
     historyHtml = `
-      <div class="card">
-        <h3 class="card-title" style="margin-bottom: 20px; display:flex; align-items:center; gap:8px;">
-          <span class="material-icons-round" style="color:var(--primary-light);">history</span>
-          保管歷史紀錄
-        </h3>
-        <div class="table-responsive mobile-card-table" style="max-height: 400px; overflow-y: auto;">
-          <table class="table">
+      <div class="table-wrap" style="margin-top: 24px;">
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-glass);">
+          <h3 class="card-title" style="margin: 0; display:flex; align-items:center; gap:8px;">
+            <span class="material-icons-round" style="color:var(--primary-light);">history</span>
+            保管歷史紀錄
+          </h3>
+        </div>
+        <div class="mobile-card-table" style="max-height: 400px; overflow-y: auto;">
+          <table>
             <thead>
               <tr>
                 <th>保管人</th>
