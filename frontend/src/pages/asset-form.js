@@ -312,6 +312,10 @@ export default async function assetFormPage({ id } = {}) {
           '<div class="form-group">' +
           '<label class="form-label">職類名稱 *</label>' +
           '<input type="text" class="form-input" id="quick-role-name" placeholder="輸入職類名稱（如：教師、學生）" />' +
+          '</div>' +
+          '<div class="form-group" style="margin-top:16px;">' +
+          '<label class="form-label">英文大寫前綴 *</label>' +
+          '<input type="text" class="form-input" id="quick-role-prefix" placeholder="例如：TEA, STU" style="text-transform:uppercase;" />' +
           '</div>';
 
         const footer = document.createElement('div');
@@ -331,12 +335,13 @@ export default async function assetFormPage({ id } = {}) {
         const saveBtn = document.getElementById('quick-role-save');
         saveBtn.addEventListener('click', async () => {
           const name = document.getElementById('quick-role-name').value.trim();
-          if (!name) return showToast('請填寫職類名稱', 'warning');
+          const prefix = document.getElementById('quick-role-prefix').value.trim().toUpperCase();
+          if (!name || !prefix) return showToast('請填寫職類名稱與前綴', 'warning');
           
           try {
             saveBtn.disabled = true;
             saveBtn.textContent = '處理中...';
-            const newRole = await rolesAPI.create({ name });
+            const newRole = await rolesAPI.create({ name, prefix });
             showToast('職類已建立', 'success');
             await loadRoles();
             document.getElementById('custodianRoleId').value = newRole.id;

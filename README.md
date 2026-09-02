@@ -1,8 +1,9 @@
-# 📦 財產管理系統 (Property Management System) v1.0.0
+# 📦 財產管理系統 (Property Management System) v1.0.1
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
 ![Node](https://img.shields.io/badge/node-v20+-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgres-16-blue.svg)
+![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 
 一套前後端分離的現代化財產管理網站，支援 QR Code 掃描追蹤、多層次角色與職類權限控管、系統備份與還原功能，後端採用 Node.js 與 PostgreSQL 資料庫，並具備絕美的 iOS Liquid Glassmorphism (液態玻璃) 介面設計。
 
@@ -20,6 +21,7 @@
 | 📝 **操作日誌稽核** | 完整記錄所有登入與敏感的資料變更，方便後續安全稽核。 |
 | 🖼️ **圖片上傳與相簿** | 財產可上傳多張照片，並有精美的燈箱預覽。 |
 | 🌙 **深色/淺色主題切換** | 採用現代化的毛玻璃設計 (Glassmorphism)，並能依環境自由切換主題。 |
+| 🔄 **自動向下相容** | (v1.0.1 新增) 伺服器啟動時會自動偵測並修正舊版資料庫結構缺失，無痛升級。 |
 
 ---
 
@@ -46,50 +48,54 @@ git clone https://github.com/JoeHuang0606/property-mgmt.git
 cd property-mgmt
 
 # 2. 修改密碼與環境變數 (重要)
-# 請修改 docker-compose.yml 內的 DB_PASSWORD 與 JWT_SECRET
+# 請務必修改 docker-compose.yml 內的 DB_PASSWORD 與 JWT_SECRET
 nano docker-compose.yml
 
 # 3. 啟動服務與資料庫
 docker compose up -d --build
 ```
 
-服務啟動後，請開啟瀏覽器前往 `http://localhost:4173`。
+服務啟動後，請開啟瀏覽器前往 `http://localhost:4173` 或您設定的網域。
 
-### 🔄 如何更新到最新版本
+---
 
-若您已經部署過舊版本，想更新到最新版本，請在您的伺服器執行以下指令：
+## 🔄 系統更新指南
+
+如果您已經在伺服器上部署了舊版本，並想要同步最新的 GitHub 程式碼（升級至最新版），請依循以下步驟進行安全升級：
+
+### 標準更新流程
 
 ```bash
-cd property-mgmt
+cd /opt/property-mgmt  # 進入您的專案目錄
 
-# 1. 取得最新程式碼
+# 1. 暫存您在伺服器上修改過的檔案 (例如 docker-compose.yml 的密碼設定)
+sudo git stash
+
+# 2. 獲取最新程式碼並強制同步
 sudo git fetch --all
-sudo git checkout main
-sudo git pull origin main
+sudo git reset --hard origin/main
 
-# 2. 重新編譯並啟動 Docker 容器
+# 3. 還原您修改過的設定檔
+sudo git stash pop
+
+# 4. 重新編譯並啟動 Docker 容器
+sudo docker compose down
 sudo docker compose up -d --build
-
-# 3. 清理舊的無用映像檔 (選用)
-sudo docker image prune -f
 ```
 
-> **💡 常見錯誤排除 (Git 權限問題)**
-> 如果在執行 `git fetch` 時遇到 `fatal: detected dubious ownership in repository` 錯誤，請執行以下指令將資料夾加入安全名單，再重新執行更新步驟：
+### 常見錯誤與排除方式
+
+> 💡 **錯誤 1: `fatal: detected dubious ownership in repository`**
+> 此為 Git 的權限保護機制。請執行以下指令將專案目錄加入安全名單：
 > ```bash
 > git config --global --add safe.directory /opt/property-mgmt
 > ```
-> 
-> **💡 常見錯誤排除 (無法 Pull 最新程式碼)**
-> 如果在執行 `git pull origin main` 時遇到 `error: Your local changes to the following files would be overwritten by merge`，這是因為您在伺服器上修改過密碼 (`docker-compose.yml`)。請改用以下指令來保留您的密碼並更新：
-> ```bash
-> git stash
-> git pull origin main
-> git stash pop
-> ```
 
-> **💡 資料會遺失嗎？**
-> 不會的！PostgreSQL 資料庫已經掛載在 Docker Volume（`pgdata`） 中，重新執行指令只會更新後端 API 和前端頁面，您的帳號和財產資料都會完整保留。
+> 💡 **錯誤 2: `git stash pop` 發生 Conflict (衝突)**
+> 這代表官方的 `docker-compose.yml` 有更新，與您的修改發生衝突。您只需重新編輯 `nano docker-compose.yml`，把衝突標記 (`<<<<<<<`) 刪除，並確認密碼正確即可，然後再執行 `docker compose up -d --build`。
+
+> 💡 **資料會遺失嗎？**
+> **不會！** 您的資料庫 (`pgdata`) 和上傳的圖片 (`uploads_data`) 都已經被安全地掛載於 Docker Volumes。只要您沒有執行 `docker volume rm`，不論您更新或重啟容器多少次，帳號和財產資料都會完整保留！
 
 ---
 
@@ -102,7 +108,7 @@ sudo docker image prune -f
 | `admin` | `admin123` | 管理員 |
 
 > ⚠️ **安全性警告**：請在首次登入後，**立刻至右上角「修改密碼」變更管理員密碼**！
-> ⚠️ **注意**：v1.0.0 版本已移除了部署時的預設分類與職類假資料，資料庫呈現完全乾淨的狀態。
+> ⚠️ **資料狀態**：新版系統已移除了部署時的預設分類與職類假資料，資料庫為完全乾淨的生產環境狀態。
 
 ---
 
@@ -134,9 +140,9 @@ sudo docker image prune -f
 
 ## 🌐 伺服器與反向代理建議
 
-若您要在生產環境上線，建議配置 Nginx 反向代理或 **Cloudflare Tunnels** 以啟用 HTTPS：
+若您要在生產環境上線，強烈建議配置 Nginx 反向代理或 **Cloudflare Tunnels** 以啟用 HTTPS 加密連線：
 
-### Nginx 反向代理範例
+### Nginx 反向代理範例 (搭配 HTTPS)
 ```nginx
 server {
     listen 80;
@@ -146,6 +152,8 @@ server {
         proxy_pass http://localhost:4173;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
     
     # 支援靜態檔案與圖片上傳路徑
@@ -156,4 +164,4 @@ server {
 ```
 
 ---
-*Developed for Modern Asset Management workflows.*
+*Designed & Developed for Modern Asset Management Workflows.*
