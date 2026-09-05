@@ -91,7 +91,8 @@ router.post('/', authorize('admin', 'manager'), async (req, res) => {
         return res.status(400).json({ error: '職類管理員必須至少分配一個職類' });
       }
       if (req.user.role === 'manager') {
-        const isSubset = roleIds.every(id => req.user.assignedRoles.includes(parseInt(id, 10)));
+        const myRoles = Array.isArray(req.user.assignedRoles) ? req.user.assignedRoles : [];
+        const isSubset = roleIds.every(id => myRoles.includes(parseInt(id, 10)));
         if (!isSubset) {
           return res.status(403).json({ error: '無法分配您未擁有的職類權限' });
         }
@@ -200,7 +201,8 @@ router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
         return res.status(400).json({ error: '職類管理員必須至少分配一個職類' });
       }
       if (req.user.role === 'manager') {
-        const isSubset = roleIds.every(id => req.user.assignedRoles.includes(parseInt(id, 10)));
+        const myRoles = Array.isArray(req.user.assignedRoles) ? req.user.assignedRoles : [];
+        const isSubset = roleIds.every(id => myRoles.includes(parseInt(id, 10)));
         if (!isSubset) {
           return res.status(403).json({ error: '無法分配您未擁有的職類權限' });
         }
@@ -371,6 +373,20 @@ router.put('/:id/roles', authorize('admin', 'manager'), async (req, res) => {
     }
     if (userRes.rows[0].role !== 'manager') {
       return res.status(400).json({ error: '只能分配職類給管理員 (manager)' });
+    }
+
+    // 不允許修改自己的職類權限
+    if (parseInt(id, 10) === req.user.id) {
+      return res.status(400).json({ error: '不能修改自己的職類權限' });
+    }
+
+    // manager 只能分配自己擁有的職類
+    if (req.user.role === 'manager') {
+      const myRoles = Array.isArray(req.user.assignedRoles) ? req.user.assignedRoles : [];
+      const isSubset = roleIds.every(rId => myRoles.includes(parseInt(rId, 10)));
+      if (!isSubset) {
+        return res.status(403).json({ error: '無法分配您未擁有的職類權限' });
+      }
     }
 
     await client.query('BEGIN');

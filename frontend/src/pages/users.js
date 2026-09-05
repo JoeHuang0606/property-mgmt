@@ -166,15 +166,26 @@ async function loadUsers() {
 async function showUserForm(user = null) {
   const isEdit = !!user;
   const currentUser = getUser();
-  const isEditingSelf = isEdit && user?.id === currentUser?.id;
+  const isEditingSelf = isEdit && parseInt(user?.id, 10) === parseInt(currentUser?.id, 10);
   const isEditingDeveloper = isEdit && user?.username === 'Developer';
 
-  // 取得全部職類列表
+  let users = [];
   let allRoles = [];
   try {
+    users = await usersAPI.list();
+    
+    // 若為 manager，更新 currentUser 最新的 assignedRoles 以免 local storage 資料過時
+    if (currentUser?.role === 'manager') {
+      const myself = users.find(u => parseInt(u.id, 10) === parseInt(currentUser.id, 10));
+      if (myself && Array.isArray(myself.assignedRoles)) {
+        currentUser.assignedRoles = myself.assignedRoles;
+      }
+    }
+
     allRoles = await rolesAPI.list();
-    if (currentUser?.role === 'manager' && Array.isArray(currentUser.assignedRoles)) {
-      allRoles = allRoles.filter(r => currentUser.assignedRoles.includes(r.id));
+    if (currentUser?.role === 'manager') {
+      const myRoles = Array.isArray(currentUser.assignedRoles) ? currentUser.assignedRoles : [];
+      allRoles = allRoles.filter(r => myRoles.includes(r.id));
     }
   } catch (err) {
     showToast('無法取得職類列表', 'error');
@@ -209,10 +220,11 @@ async function showUserForm(user = null) {
     </div>
     <div class="form-group" id="modal-role-selection" style="display: ${user?.role === 'manager' ? 'block' : 'none'}; border-top: 1px solid var(--border-glass); padding-top: 16px; margin-top: 16px;">
       <label class="form-label">管理職類 (至少選擇一項) *</label>
+      ${isEditingSelf ? '<p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">您無法修改自己的職類權限。</p>' : ''}
       <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 8px; border: 1px solid var(--border-glass); border-radius: var(--radius-sm); background: rgba(0,0,0,0.2);">
         ${allRoles.length === 0 ? '<span style="color:var(--text-muted);">尚無職類資料</span>' : 
           allRoles.map(r => `
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; opacity: ${isEditingSelf ? '0.5' : '1'};">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: ${isEditingSelf ? 'not-allowed' : 'pointer'}; opacity: ${isEditingSelf ? '0.5' : '1'};">
               <input type="checkbox" name="managed_roles" value="${r.id}" ${assignedRolesSet.has(r.id) ? 'checked' : ''} ${isEditingSelf ? 'disabled' : ''} />
               <span>${r.name} (${r.prefix})</span>
             </label>
@@ -312,7 +324,23 @@ async function showUserForm(user = null) {
 
 async function showRoleAssignForm(user) {
   try {
-    const roles = await rolesAPI.list();
+    const currentUser = getUser();
+    const isEditingSelf = parseInt(user?.id, 10) === parseInt(currentUser?.id, 10);
+    
+    // 更新最新 currentUser.assignedRoles
+    const users = await usersAPI.list();
+    if (currentUser?.role === 'manager') {
+      const myself = users.find(u => parseInt(u.id, 10) === parseInt(currentUser.id, 10));
+      if (myself && Array.isArray(myself.assignedRoles)) {
+        currentUser.assignedRoles = myself.assignedRoles;
+      }
+    }
+
+    let roles = await rolesAPI.list();
+    if (currentUser?.role === 'manager') {
+      const myRoles = Array.isArray(currentUser.assignedRoles) ? currentUser.assignedRoles : [];
+      roles = roles.filter(r => myRoles.includes(r.id));
+    }
     
     const body = document.createElement('div');
     if (roles.length === 0) {
@@ -321,8 +349,8 @@ async function showRoleAssignForm(user) {
       const checkboxesHtml = roles.map(r => {
         const isChecked = user.assignedRoles.includes(r.id);
         return `
-          <label style="display:flex; align-items:center; gap:8px; padding:8px 0; cursor:pointer;">
-            <input type="checkbox" name="assign-roles" value="${r.id}" ${isChecked ? 'checked' : ''} style="width:18px;height:18px;">
+          <label style="display:flex; align-items:center; gap:8px; padding:8px 0; cursor:${isEditingSelf ? 'not-allowed' : 'pointer'}; opacity: ${isEditingSelf ? '0.5' : '1'};">
+            <input type="checkbox" name="assign-roles" value="${r.id}" ${isChecked ? 'checked' : ''} style="width:18px;height:18px;" ${isEditingSelf ? 'disabled' : ''}>
             <span>${r.name}</span>
           </label>
         `;
@@ -330,6 +358,7 @@ async function showRoleAssignForm(user) {
       
       body.innerHTML = `
         <p style="margin-bottom: 12px;">請勾選要分配給「<strong>${user.username}</strong>」的職類：</p>
+        ${isEditingSelf ? '<p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">您無法修改自己的職類權限。</p>' : ''}
         <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border-color); padding:10px; border-radius:6px;">
           ${checkboxesHtml}
         </div>
@@ -362,6 +391,11 @@ async function showRoleAssignForm(user) {
     cancelBtn.addEventListener('click', close);
 
     saveBtn.addEventListener('click', async () => {
+      if (isEditingSelf) {
+        showToast('無法修改自己的職類權限', 'warning');
+        return;
+      }
+
       const checkedBoxes = Array.from(body.querySelectorAll('input[name="assign-roles"]:checked'));
       const roleIds = checkedBoxes.map(cb => parseInt(cb.value, 10));
 

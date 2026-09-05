@@ -1,6 +1,6 @@
-# 📦 財產管理系統 (Property Management System) v1.3.0
+# 📦 財產管理系統 (Property Management System) v0.17.1
 
-![Version](https://img.shields.io/badge/version-0.17.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.17.1-blue.svg)
 ![Node](https://img.shields.io/badge/node-v20+-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgres-16-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
@@ -30,6 +30,7 @@
 | ❌ **已歸還自動防呆** | (v1.3.0 新增) 已歸還的財產在清單與詳細頁面中，保管人欄位會自動切換為「-」，一目了然。 |
 | 👤 **個人頭像與介面優化** | (v1.3.1 新增) 支援個人頭像上傳與 1x1 裁切，優化導航列下拉選單視覺清晰度，並新增「只顯示我的財產」快速篩選。 |
 | 👥 **帳號管理頭像整合** | (v1.3.1 新增) 帳號管理清單整合個人頭像顯示，讓使用者識別更加直覺且美觀。 |
+| 🛡️ **權限越權防護** | (v0.17.1 新增) 修補帳號管理與職類分配的越權漏洞，強化 manager 權限子集驗證與前端防護。 |
 ---
 
 ## 🏗️ 技術棧
