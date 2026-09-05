@@ -1,6 +1,6 @@
 {
   "name": "property-mgmt-frontend",
-  "version": "0.17.1",
+  "version": "1.17.2",
   "description": "財產管理系統前端",
   "type": "module",
   "scripts": {

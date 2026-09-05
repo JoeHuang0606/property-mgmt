@@ -183,9 +183,11 @@ async function showUserForm(user = null) {
     }
 
     allRoles = await rolesAPI.list();
+    let myRoles = [];
     if (currentUser?.role === 'manager') {
-      const myRoles = Array.isArray(currentUser.assignedRoles) ? currentUser.assignedRoles : [];
-      allRoles = allRoles.filter(r => myRoles.includes(r.id));
+      myRoles = Array.isArray(currentUser.assignedRoles) ? currentUser.assignedRoles : [];
+    } else if (currentUser?.role === 'admin') {
+      myRoles = allRoles.map(r => r.id);
     }
   } catch (err) {
     showToast('無法取得職類列表', 'error');
@@ -223,12 +225,16 @@ async function showUserForm(user = null) {
       ${isEditingSelf ? '<p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">您無法修改自己的職類權限。</p>' : ''}
       <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 8px; border: 1px solid var(--border-glass); border-radius: var(--radius-sm); background: rgba(0,0,0,0.2);">
         ${allRoles.length === 0 ? '<span style="color:var(--text-muted);">尚無職類資料</span>' : 
-          allRoles.map(r => `
-            <label style="display: flex; align-items: center; gap: 8px; cursor: ${isEditingSelf ? 'not-allowed' : 'pointer'}; opacity: ${isEditingSelf ? '0.5' : '1'};">
-              <input type="checkbox" name="managed_roles" value="${r.id}" ${assignedRolesSet.has(r.id) ? 'checked' : ''} ${isEditingSelf ? 'disabled' : ''} />
-              <span>${r.name} (${r.prefix})</span>
+          allRoles.map(r => {
+            const hasPermission = currentUser?.role === 'admin' || myRoles.includes(r.id);
+            const isDisabled = isEditingSelf || !hasPermission;
+            return `
+            <label style="display: flex; align-items: center; gap: 8px; cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; opacity: ${isDisabled ? '0.5' : '1'};">
+              <input type="checkbox" name="managed_roles" value="${r.id}" ${assignedRolesSet.has(r.id) ? 'checked' : ''} ${isDisabled ? 'disabled' : ''} />
+              <span>${r.name} (${r.prefix}) ${!hasPermission ? '<span style="font-size:0.75rem; color:var(--text-muted);">(無權限)</span>' : ''}</span>
             </label>
-          `).join('')
+            `;
+          }).join('')
         }
       </div>
     </div>
@@ -336,10 +342,12 @@ async function showRoleAssignForm(user) {
       }
     }
 
-    let roles = await rolesAPI.list();
+    const roles = await rolesAPI.list();
+    let myRoles = [];
     if (currentUser?.role === 'manager') {
-      const myRoles = Array.isArray(currentUser.assignedRoles) ? currentUser.assignedRoles : [];
-      roles = roles.filter(r => myRoles.includes(r.id));
+      myRoles = Array.isArray(currentUser.assignedRoles) ? currentUser.assignedRoles : [];
+    } else if (currentUser?.role === 'admin') {
+      myRoles = roles.map(r => r.id);
     }
     
     const body = document.createElement('div');
@@ -348,10 +356,12 @@ async function showRoleAssignForm(user) {
     } else {
       const checkboxesHtml = roles.map(r => {
         const isChecked = user.assignedRoles.includes(r.id);
+        const hasPermission = currentUser?.role === 'admin' || myRoles.includes(r.id);
+        const isDisabled = isEditingSelf || !hasPermission;
         return `
-          <label style="display:flex; align-items:center; gap:8px; padding:8px 0; cursor:${isEditingSelf ? 'not-allowed' : 'pointer'}; opacity: ${isEditingSelf ? '0.5' : '1'};">
-            <input type="checkbox" name="assign-roles" value="${r.id}" ${isChecked ? 'checked' : ''} style="width:18px;height:18px;" ${isEditingSelf ? 'disabled' : ''}>
-            <span>${r.name}</span>
+          <label style="display:flex; align-items:center; gap:8px; padding:8px 0; cursor:${isDisabled ? 'not-allowed' : 'pointer'}; opacity: ${isDisabled ? '0.5' : '1'};">
+            <input type="checkbox" name="assign-roles" value="${r.id}" ${isChecked ? 'checked' : ''} style="width:18px;height:18px;" ${isDisabled ? 'disabled' : ''}>
+            <span>${r.name} ${!hasPermission ? '<span style="font-size:0.75rem; color:var(--text-muted);">(無權限)</span>' : ''}</span>
           </label>
         `;
       }).join('');
