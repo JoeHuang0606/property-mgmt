@@ -90,6 +90,12 @@ router.post('/', authorize('admin', 'manager'), async (req, res) => {
       if (!Array.isArray(roleIds) || roleIds.length === 0) {
         return res.status(400).json({ error: '職類管理員必須至少分配一個職類' });
       }
+      if (req.user.role === 'manager') {
+        const isSubset = roleIds.every(id => req.user.assignedRoles.includes(parseInt(id, 10)));
+        if (!isSubset) {
+          return res.status(403).json({ error: '無法分配您未擁有的職類權限' });
+        }
+      }
     }
 
     // 檢查帳號是否已存在
@@ -150,9 +156,14 @@ router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
     const { id } = req.params;
     const { displayName, role, password, roleIds } = req.body;
 
-    // 不允許修改自己的角色
-    if (parseInt(id) === req.user.id && role && role !== req.user.role) {
-      return res.status(400).json({ error: '不能修改自己的角色' });
+    // 不允許修改自己的角色或職類權限
+    if (parseInt(id, 10) === req.user.id) {
+      if (role && role !== req.user.role) {
+        return res.status(400).json({ error: '不能修改自己的角色' });
+      }
+      if (roleIds !== undefined) {
+        return res.status(400).json({ error: '不能修改自己的職類權限' });
+      }
     }
 
     // 檢查目標使用者的原始角色
@@ -187,6 +198,12 @@ router.put('/:id', authorize('admin', 'manager'), async (req, res) => {
     if (userRole === 'manager' && roleIds !== undefined) {
       if (!Array.isArray(roleIds) || roleIds.length === 0) {
         return res.status(400).json({ error: '職類管理員必須至少分配一個職類' });
+      }
+      if (req.user.role === 'manager') {
+        const isSubset = roleIds.every(id => req.user.assignedRoles.includes(parseInt(id, 10)));
+        if (!isSubset) {
+          return res.status(403).json({ error: '無法分配您未擁有的職類權限' });
+        }
       }
     }
 
