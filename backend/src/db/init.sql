@@ -37,9 +37,9 @@ CREATE TABLE IF NOT EXISTS categories (
 );
 
 -- 建立財產表
-CREATE TABLE IF NOT EXISTS assets (
+CREATE TABLE IF NOT EXISTS properties (
   id              SERIAL PRIMARY KEY,
-  asset_code      VARCHAR(50) UNIQUE NOT NULL,
+  property_code      VARCHAR(50) UNIQUE NOT NULL,
   name            VARCHAR(200) NOT NULL,
   category_id     INT REFERENCES categories(id) ON DELETE SET NULL,
   location        VARCHAR(200),
@@ -57,9 +57,9 @@ CREATE TABLE IF NOT EXISTS assets (
 );
 
 -- 建立財產詳情圖表
-CREATE TABLE IF NOT EXISTS asset_photos (
+CREATE TABLE IF NOT EXISTS property_photos (
   id          SERIAL PRIMARY KEY,
-  asset_id    INT REFERENCES assets(id) ON DELETE CASCADE,
+  property_id    INT REFERENCES properties(id) ON DELETE CASCADE,
   photo_url   TEXT NOT NULL,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
@@ -77,9 +77,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- 建立保管歷史表
-CREATE TABLE IF NOT EXISTS asset_custody_history (
+CREATE TABLE IF NOT EXISTS property_custody_history (
   id          SERIAL PRIMARY KEY,
-  asset_id    INT REFERENCES assets(id) ON DELETE CASCADE,
+  property_id    INT REFERENCES properties(id) ON DELETE CASCADE,
   custodian   VARCHAR(100) NOT NULL,
   take_date   DATE NOT NULL,
   return_date DATE,
@@ -87,14 +87,14 @@ CREATE TABLE IF NOT EXISTS asset_custody_history (
 );
 
 -- 建立索引
-CREATE INDEX IF NOT EXISTS idx_assets_asset_code ON assets(asset_code);
-CREATE INDEX IF NOT EXISTS idx_assets_category_id ON assets(category_id);
-CREATE INDEX IF NOT EXISTS idx_assets_custodian ON assets(custodian);
-CREATE INDEX IF NOT EXISTS idx_assets_category ON assets(category_id);
+CREATE INDEX IF NOT EXISTS idx_properties_property_code ON properties(property_code);
+CREATE INDEX IF NOT EXISTS idx_properties_category_id ON properties(category_id);
+CREATE INDEX IF NOT EXISTS idx_properties_custodian ON properties(custodian);
+CREATE INDEX IF NOT EXISTS idx_properties_category ON properties(category_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_asset_custody_history_asset ON asset_custody_history(asset_id);
-CREATE INDEX IF NOT EXISTS idx_asset_photos_asset ON asset_photos(asset_id);
+CREATE INDEX IF NOT EXISTS idx_property_custody_history_property ON property_custody_history(property_id);
+CREATE INDEX IF NOT EXISTS idx_property_photos_property ON property_photos(property_id);
 
 
 

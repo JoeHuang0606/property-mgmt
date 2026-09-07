@@ -36,7 +36,7 @@ export default async function auditLogPage() {
             </select>
             <select class="filter-select" id="filter-target">
               <option value="">全部對象</option>
-              <option value="assets">財產</option>
+              <option value="properties">財產</option>
               <option value="users">使用者</option>
             </select>
             <select class="filter-select" id="filter-user">
@@ -173,7 +173,7 @@ async function loadAuditLog() {
     };
 
     const targetNames = {
-      assets: '財產',
+      properties: '財產',
       users: '使用者',
       categories: '類別',
       roles: '職類',
@@ -184,7 +184,7 @@ async function loadAuditLog() {
         ${data.data.map(log => {
           const details = log.details || {};
           let detailText = '';
-          if (details.assetCode) detailText = `編號: ${details.assetCode}`;
+          if (details.propertyCode) detailText = `編號: ${details.propertyCode}`;
           if (details.name) detailText += detailText ? ` · ${details.name}` : details.name;
           if (details.createdUser) detailText = `帳號: ${details.createdUser}`;
           if (details.deletedUser) detailText = `帳號: ${details.deletedUser}`;
@@ -201,8 +201,8 @@ async function loadAuditLog() {
                   <strong>${log.userDisplayName || log.username}</strong>
                   ${actionNames[log.action] || log.action}了
                   ${(() => {
-                    if (log.target === 'assets' && log.targetAssetCode) {
-                      return `財產 ${log.targetAssetCode} ${log.targetAssetName}`;
+                    if (log.target === 'properties' && log.targetPropertyCode) {
+                      return `財產 ${log.targetPropertyCode} ${log.targetPropertyName}`;
                     }
                     if (log.target === 'users' && log.targetUserName) {
                       return `使用者 ${log.targetUserName}`;

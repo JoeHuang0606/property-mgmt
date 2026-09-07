@@ -1,7 +1,7 @@
 /**
  * 儀表板頁面
  */
-import { assetsAPI } from '../api.js';
+import { propertiesAPI } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
 import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
@@ -36,9 +36,9 @@ export default async function dashboardPage() {
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">📦 最近新增財產</h3>
-                <a href="#/assets" class="btn btn-ghost btn-sm">查看全部</a>
+                <a href="#/properties" class="btn btn-ghost btn-sm">查看全部</a>
               </div>
-              <div id="recent-assets" style="display:flex; flex-direction:column; gap:8px;">
+              <div id="recent-properties" style="display:flex; flex-direction:column; gap:8px;">
                 <div class="skeleton skeleton-card" style="margin-bottom:8px;height:48px;"></div>
                 <div class="skeleton skeleton-card" style="margin-bottom:8px;height:48px;"></div>
                 <div class="skeleton skeleton-card" style="height:48px;"></div>
@@ -55,17 +55,17 @@ export default async function dashboardPage() {
 
   // 載入統計數據
   try {
-    const [stats, assetsData] = await Promise.all([
-      assetsAPI.stats(),
-      assetsAPI.list({ limit: 5, sort: 'created_at', order: 'DESC' }),
+    const [stats, propertiesData] = await Promise.all([
+      propertiesAPI.stats(),
+      propertiesAPI.list({ limit: 5, sort: 'created_at', order: 'DESC' }),
     ]);
 
     // 動態更新統計數字（含計數動畫）
     animateNumber('stat-total', stats.total);
 
     // 最近新增的財產
-    const recentEl = document.getElementById('recent-assets');
-    if (assetsData.data.length === 0) {
+    const recentEl = document.getElementById('recent-properties');
+    if (propertiesData.data.length === 0) {
       recentEl.innerHTML = `
         <div class="empty-state" style="padding:30px;">
           <span class="material-icons-round">inbox</span>
@@ -73,13 +73,13 @@ export default async function dashboardPage() {
         </div>
       `;
     } else {
-      recentEl.innerHTML = assetsData.data.map(a => `
-        <a href="#/assets/${a.id}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:var(--radius-sm);transition:var(--transition);border:1px solid transparent;text-decoration:none;color:var(--text-primary);"
+      recentEl.innerHTML = propertiesData.data.map(a => `
+        <a href="#/properties/${a.id}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:var(--radius-sm);transition:var(--transition);border:1px solid transparent;text-decoration:none;color:var(--text-primary);"
            onmouseover="this.style.background='var(--bg-glass-hover)';this.style.borderColor='var(--border-glass)'"
            onmouseout="this.style.background='';this.style.borderColor='transparent'">
           <div>
             <div style="font-weight:600;font-size:0.9rem;">${a.name}</div>
-            <div style="font-size:0.78rem;color:var(--text-muted);">${a.assetCode} · ${a.returnDate ? '-' : (a.custodian || '未分配')}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">${a.propertyCode} · ${a.returnDate ? '-' : (a.custodian || '未分配')}</div>
           </div>
         </a>
       `).join('');

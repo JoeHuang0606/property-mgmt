@@ -1,7 +1,7 @@
 /**
  * 財產列表頁面
  */
-import { assetsAPI, categoriesAPI, rolesAPI } from '../api.js';
+import { propertiesAPI, categoriesAPI, rolesAPI } from '../api.js';
 import { isManager, isAdmin, getUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { showConfirm } from '../components/modal.js';
@@ -12,10 +12,10 @@ let currentPage = 1;
 let currentSearch = '';
 let currentCategory = '';
 let currentRole = '';
-let isMyAssetsOnly = false;
-let selectedAssetIds = new Set();
+let isMyPropertiesOnly = false;
+let selectedPropertyIds = new Set();
 
-export default async function assetsPage() {
+export default async function propertiesPage() {
   const app = document.getElementById('app');
 
   app.innerHTML = `
@@ -39,7 +39,7 @@ export default async function assetsPage() {
                   <span class="material-icons-round">delete</span>
                   <span>刪除 (0)</span>
                 </button>
-                <a href="#/assets/new" class="btn btn-primary">
+                <a href="#/properties/new" class="btn btn-primary">
                   <span class="material-icons-round">add</span>
                   新增財產
                 </a>
@@ -62,16 +62,16 @@ export default async function assetsPage() {
             </select>
 
             <label class="filter-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-secondary); user-select: none;">
-              <input type="checkbox" id="filter-my-assets" ${isMyAssetsOnly ? 'checked' : ''} />
+              <input type="checkbox" id="filter-my-properties" ${isMyPropertiesOnly ? 'checked' : ''} />
               只顯示我的財產
             </label>
           </div>
 
-          <div id="assets-table">
+          <div id="properties-table">
             <div class="skeleton skeleton-card" style="height:400px;"></div>
           </div>
 
-          <div id="assets-pagination"></div>
+          <div id="properties-pagination"></div>
         </div>
       </main>
     </div>
@@ -117,7 +117,7 @@ export default async function assetsPage() {
     searchTimer = setTimeout(() => {
       currentSearch = e.target.value;
       currentPage = 1;
-      loadAssets();
+      loadProperties();
     }, 300);
   });
 
@@ -126,35 +126,35 @@ export default async function assetsPage() {
   document.getElementById('filter-category').addEventListener('change', (e) => {
     currentCategory = e.target.value;
     currentPage = 1;
-    loadAssets();
+    loadProperties();
   });
 
   document.getElementById('filter-role').addEventListener('change', (e) => {
     currentRole = e.target.value;
     currentPage = 1;
-    loadAssets();
+    loadProperties();
   });
 
-  const myAssetsCb = document.getElementById('filter-my-assets');
-  if (myAssetsCb) {
-    myAssetsCb.addEventListener('change', (e) => {
-      isMyAssetsOnly = e.target.checked;
+  const myPropertiesCb = document.getElementById('filter-my-properties');
+  if (myPropertiesCb) {
+    myPropertiesCb.addEventListener('change', (e) => {
+      isMyPropertiesOnly = e.target.checked;
       currentPage = 1;
-      loadAssets();
+      loadProperties();
     });
   }
 
   const exportBtn = document.getElementById('btn-export-qrcodes');
   if (exportBtn) {
     exportBtn.addEventListener('click', async () => {
-      if (selectedAssetIds.size === 0) return;
+      if (selectedPropertyIds.size === 0) return;
 
       exportBtn.disabled = true;
       const originalText = exportBtn.innerHTML;
       exportBtn.innerHTML = '<span class="material-icons-round spin">sync</span> 匯出中...';
 
       try {
-        await assetsAPI.exportQRCodes(Array.from(selectedAssetIds));
+        await propertiesAPI.exportQRCodes(Array.from(selectedPropertyIds));
         showToast('匯出成功！', 'success');
       } catch (err) {
         showToast(err.message, 'error');
@@ -168,11 +168,11 @@ export default async function assetsPage() {
   const bulkDeleteBtn = document.getElementById('btn-bulk-delete');
   if (bulkDeleteBtn) {
     bulkDeleteBtn.addEventListener('click', async () => {
-      if (selectedAssetIds.size === 0) return;
+      if (selectedPropertyIds.size === 0) return;
 
       showConfirm({
         title: '刪除財產',
-        message: `確定要刪除選取的 ${selectedAssetIds.size} 筆財產嗎？此操作無法復原。`,
+        message: `確定要刪除選取的 ${selectedPropertyIds.size} 筆財產嗎？此操作無法復原。`,
         danger: true,
         confirmText: '刪除',
         onConfirm: async () => {
@@ -181,14 +181,14 @@ export default async function assetsPage() {
           bulkDeleteBtn.innerHTML = '<span class="material-icons-round spin">sync</span> 刪除中...';
 
           try {
-            const ids = Array.from(selectedAssetIds);
+            const ids = Array.from(selectedPropertyIds);
             for (const id of ids) {
-              await assetsAPI.delete(id);
+              await propertiesAPI.delete(id);
             }
             showToast('刪除成功！', 'success');
-            selectedAssetIds.clear();
+            selectedPropertyIds.clear();
             updateExportButton();
-            loadAssets();
+            loadProperties();
           } catch (err) {
             showToast(err.message, 'error');
           } finally {
@@ -200,7 +200,7 @@ export default async function assetsPage() {
     });
   }
 
-  await loadAssets();
+  await loadProperties();
 }
 
 function updateExportButton() {
@@ -208,19 +208,19 @@ function updateExportButton() {
   const deleteBtn = document.getElementById('btn-bulk-delete');
 
   if (exportBtn) {
-    exportBtn.querySelector('span:last-child').textContent = `匯出 QR CODE (${selectedAssetIds.size})`;
-    exportBtn.disabled = selectedAssetIds.size === 0;
+    exportBtn.querySelector('span:last-child').textContent = `匯出 QR CODE (${selectedPropertyIds.size})`;
+    exportBtn.disabled = selectedPropertyIds.size === 0;
   }
 
   if (deleteBtn) {
-    deleteBtn.querySelector('span:last-child').textContent = `刪除 (${selectedAssetIds.size})`;
-    deleteBtn.disabled = selectedAssetIds.size === 0;
+    deleteBtn.querySelector('span:last-child').textContent = `刪除 (${selectedPropertyIds.size})`;
+    deleteBtn.disabled = selectedPropertyIds.size === 0;
   }
 }
 
-async function loadAssets() {
-  const tableEl = document.getElementById('assets-table');
-  const paginationEl = document.getElementById('assets-pagination');
+async function loadProperties() {
+  const tableEl = document.getElementById('properties-table');
+  const paginationEl = document.getElementById('properties-pagination');
 
   try {
     const queryParams = {
@@ -231,14 +231,14 @@ async function loadAssets() {
       custodian_role_id: currentRole,
     };
 
-    if (isMyAssetsOnly) {
+    if (isMyPropertiesOnly) {
       const user = getUser();
       if (user) {
         queryParams.custodian = user.displayName;
       }
     }
 
-    const data = await assetsAPI.list(queryParams);
+    const data = await propertiesAPI.list(queryParams);
 
     if (data.data.length === 0) {
       tableEl.innerHTML = `
@@ -272,15 +272,15 @@ async function loadAssets() {
           </thead>
           <tbody>
             ${data.data.map(a => {
-      const isChecked = selectedAssetIds.has(String(a.id)) ? 'checked' : '';
+      const isChecked = selectedPropertyIds.has(String(a.id)) ? 'checked' : '';
       const currentUser = getUser();
       const _canEdit = isAdmin() || (isManager() && (currentUser?.assignedRoles || []).includes(a.custodianRoleId));
       const thumbHtml = a.thumbnailUrl ? `<img src="/api/uploads/${a.thumbnailUrl}" alt="thumbnail" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle;" />` : '';
 
       return `
                 <tr class="${isChecked ? 'selected' : ''}">
-                  ${canManage ? `<td data-label="選擇"><input type="checkbox" class="check-asset" value="${a.id}" ${isChecked} /></td>` : ''}
-                  <td data-label="編號"><code style="font-size:0.8rem;color:var(--primary-light);">${a.assetCode}</code></td>
+                  ${canManage ? `<td data-label="選擇"><input type="checkbox" class="check-property" value="${a.id}" ${isChecked} /></td>` : ''}
+                  <td data-label="編號"><code style="font-size:0.8rem;color:var(--primary-light);">${a.propertyCode}</code></td>
                   <td data-label="名稱"><div style="display: flex; align-items: center;">${thumbHtml}<strong>${a.name}</strong></div></td>
                   <td data-label="分類">${a.categoryName || '-'}</td>
                   <td data-label="保管人">
@@ -302,11 +302,11 @@ async function loadAssets() {
                   </td>
                   <td data-label="操作">
                     <div class="action-btns">
-                      <a href="#/assets/${a.id}" class="icon-btn" title="查看詳情">
+                      <a href="#/properties/${a.id}" class="icon-btn" title="查看詳情">
                         <span class="material-icons-round">visibility</span>
                       </a>
                       ${_canEdit ? `
-                        <a href="#/assets/${a.id}/edit" class="icon-btn" title="編輯">
+                        <a href="#/properties/${a.id}/edit" class="icon-btn" title="編輯">
                           <span class="material-icons-round">edit</span>
                         </a>
                         <button class="icon-btn danger" data-delete-id="${a.id}" data-delete-name="${a.name}" title="刪除">
@@ -335,11 +335,11 @@ async function loadAssets() {
           confirmText: '刪除',
           onConfirm: async () => {
             try {
-              await assetsAPI.delete(id);
+              await propertiesAPI.delete(id);
               showToast('財產已刪除', 'success');
-              selectedAssetIds.delete(String(id));
+              selectedPropertyIds.delete(String(id));
               updateExportButton();
-              loadAssets();
+              loadProperties();
             } catch (err) {
               showToast(err.message, 'error');
             }
@@ -350,7 +350,7 @@ async function loadAssets() {
 
     if (canManage) {
       const checkAll = document.getElementById('check-all');
-      const checkAssets = tableEl.querySelectorAll('.check-asset');
+      const checkProperties = tableEl.querySelectorAll('.check-property');
 
       const updateRowStyle = (cb) => {
         const tr = cb.closest('tr');
@@ -362,35 +362,35 @@ async function loadAssets() {
 
       // 更新全選 Checkbox 狀態
       const updateCheckAll = () => {
-        const allChecked = Array.from(checkAssets).every(cb => cb.checked);
-        const someChecked = Array.from(checkAssets).some(cb => cb.checked);
-        checkAll.checked = checkAssets.length > 0 && allChecked;
+        const allChecked = Array.from(checkProperties).every(cb => cb.checked);
+        const someChecked = Array.from(checkProperties).some(cb => cb.checked);
+        checkAll.checked = checkProperties.length > 0 && allChecked;
         checkAll.indeterminate = someChecked && !allChecked;
       };
 
       // 綁定全選事件
       checkAll.addEventListener('change', (e) => {
         const isChecked = e.target.checked;
-        checkAssets.forEach(cb => {
+        checkProperties.forEach(cb => {
           cb.checked = isChecked;
           updateRowStyle(cb);
           if (isChecked) {
-            selectedAssetIds.add(cb.value);
+            selectedPropertyIds.add(cb.value);
           } else {
-            selectedAssetIds.delete(cb.value);
+            selectedPropertyIds.delete(cb.value);
           }
         });
         updateExportButton();
       });
 
       // 綁定單選事件
-      checkAssets.forEach(cb => {
+      checkProperties.forEach(cb => {
         cb.addEventListener('change', (e) => {
           updateRowStyle(e.target);
           if (e.target.checked) {
-            selectedAssetIds.add(e.target.value);
+            selectedPropertyIds.add(e.target.value);
           } else {
-            selectedAssetIds.delete(e.target.value);
+            selectedPropertyIds.delete(e.target.value);
           }
           updateCheckAll();
           updateExportButton();
@@ -437,7 +437,7 @@ async function loadAssets() {
       paginationEl.querySelectorAll('[data-page]').forEach(btn => {
         btn.addEventListener('click', () => {
           currentPage = parseInt(btn.dataset.page);
-          loadAssets();
+          loadProperties();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       });

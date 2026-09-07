@@ -13,7 +13,7 @@ export function renderSidebar() {
       { icon: 'dashboard', label: '儀表板', path: '/dashboard' },
     ]},
     { section: '財產管理', items: [
-      { icon: 'inventory_2', label: '財產列表', path: '/assets' },
+      { icon: 'inventory_2', label: '財產列表', path: '/properties' },
       { icon: 'qr_code_scanner', label: '掃描 QR Code', path: '/scanner' },
     ]},
   ];
@@ -23,7 +23,7 @@ export function renderSidebar() {
     menuItems.push({
       section: '管理',
       items: [
-        { icon: 'add_circle', label: '新增財產', path: '/assets/new' },
+        { icon: 'add_circle', label: '新增財產', path: '/properties/new' },
         { icon: 'category', label: '分類管理', path: '/categories' },
         { icon: 'people', label: '帳號管理', path: '/users' },
       ],

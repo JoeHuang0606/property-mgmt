@@ -1,7 +1,7 @@
 /**
  * 新增/編輯財產表單頁面
  */
-import { assetsAPI, categoriesAPI, usersAPI, rolesAPI } from '../api.js';
+import { propertiesAPI, categoriesAPI, usersAPI, rolesAPI } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { showModal, showConfirm } from '../components/modal.js';
 import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
@@ -9,7 +9,7 @@ import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
 import { isManager, isAdmin, getUser } from '../auth.js';
 import { navigate } from '../router.js';
 
-export default async function assetFormPage({ id } = {}) {
+export default async function propertyFormPage({ id } = {}) {
   const isEdit = !!id && id !== 'new';
   const app = document.getElementById('app');
 
@@ -24,14 +24,14 @@ export default async function assetFormPage({ id } = {}) {
               <h2 class="page-title">${isEdit ? '編輯財產' : '新增財產'}</h2>
               <p class="page-subtitle">${isEdit ? '修改財產資訊' : '建立新的財產紀錄'}</p>
             </div>
-            <a href="#/assets" class="btn btn-ghost">
+            <a href="#/properties" class="btn btn-ghost">
               <span class="material-icons-round">arrow_back</span>
               返回列表
             </a>
           </div>
 
           <div class="card" style="max-width:800px;">
-            <form id="asset-form">
+            <form id="property-form">
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label" for="name">名稱 *</label>
@@ -138,7 +138,7 @@ export default async function assetFormPage({ id } = {}) {
                   <span class="material-icons-round">${isEdit ? 'save' : 'add_circle'}</span>
                   ${isEdit ? '儲存變更' : '建立財產'}
                 </button>
-                <a href="#/assets" class="btn btn-ghost btn-lg">取消</a>
+                <a href="#/properties" class="btn btn-ghost btn-lg">取消</a>
               </div>
             </form>
           </div>
@@ -447,29 +447,29 @@ export default async function assetFormPage({ id } = {}) {
   // 若為編輯模式，載入現有資料
   if (isEdit) {
     try {
-      const asset = await assetsAPI.get(id);
-      document.getElementById('name').value = asset.name || '';
-      document.getElementById('description').value = asset.description || '';
-      document.getElementById('custodian').value = asset.custodian || '';
-      if (asset.custodianRoleId) document.getElementById('custodianRoleId').value = asset.custodianRoleId;
-      document.getElementById('custodyDate').value = asset.custodyDate ? asset.custodyDate.slice(0, 10) : '';
-      document.getElementById('returnDate').value = asset.returnDate ? asset.returnDate.slice(0, 10) : '';
-      document.getElementById('location').value = asset.location || '';
-      if (asset.categoryId) document.getElementById('categoryId').value = asset.categoryId;
-      if (asset.custodian) document.getElementById('custodian').value = asset.custodian;
+      const property = await propertiesAPI.get(id);
+      document.getElementById('name').value = property.name || '';
+      document.getElementById('description').value = property.description || '';
+      document.getElementById('custodian').value = property.custodian || '';
+      if (property.custodianRoleId) document.getElementById('custodianRoleId').value = property.custodianRoleId;
+      document.getElementById('custodyDate').value = property.custodyDate ? property.custodyDate.slice(0, 10) : '';
+      document.getElementById('returnDate').value = property.returnDate ? property.returnDate.slice(0, 10) : '';
+      document.getElementById('location').value = property.location || '';
+      if (property.categoryId) document.getElementById('categoryId').value = property.categoryId;
+      if (property.custodian) document.getElementById('custodian').value = property.custodian;
       
-      if (asset.thumbnailUrl) {
+      if (property.thumbnailUrl) {
         const previewContainer = document.getElementById('image-preview-container');
         const previewImg = document.getElementById('image-preview');
-        previewImg.src = `/api/uploads/${asset.thumbnailUrl}`;
+        previewImg.src = `/api/uploads/${property.thumbnailUrl}`;
         previewContainer.style.display = 'flex';
         previewContainer.style.alignItems = 'center';
       }
 
-      if (asset.detailPhotos && asset.detailPhotos.length > 0) {
+      if (property.detailPhotos && property.detailPhotos.length > 0) {
         const detailPhotosContainer = document.getElementById('existing-detail-photos');
         detailPhotosContainer.style.display = 'grid';
-        detailPhotosContainer.innerHTML = asset.detailPhotos.map(p => `
+        detailPhotosContainer.innerHTML = property.detailPhotos.map(p => `
           <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border-glass);">
             <img src="/api/uploads/${p.url}" alt="Detail Photo" style="width: 100%; height: 100%; object-fit: cover;" />
             <button type="button" class="icon-btn danger btn-delete-photo" data-photo-id="${p.id}" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.5); color: #fff; width: 28px; height: 28px; border-radius: 14px; display: flex; align-items: center; justify-content: center; padding: 0;">
@@ -492,7 +492,7 @@ export default async function assetFormPage({ id } = {}) {
               confirmText: '刪除',
               onConfirm: async () => {
                 try {
-                  await assetsAPI.deleteDetailPhoto(id, photoId);
+                  await propertiesAPI.deleteDetailPhoto(id, photoId);
                   showToast('照片已刪除', 'success');
                   containerToRemove.remove();
                   if (detailPhotosContainer.children.length === 0) {
@@ -517,7 +517,7 @@ export default async function assetFormPage({ id } = {}) {
   }
 
   // 表單提交
-  const form = document.getElementById('asset-form');
+  const form = document.getElementById('property-form');
   const submitBtn = document.getElementById('submit-btn');
 
   form.addEventListener('submit', async (e) => {
@@ -564,7 +564,7 @@ export default async function assetFormPage({ id } = {}) {
       submitBtn.innerHTML = '<span class="material-icons-round">hourglass_empty</span> 處理中...';
 
       if (isEdit) {
-        await assetsAPI.update(id, formData);
+        await propertiesAPI.update(id, formData);
         
         // upload detail photos if selected
         if (newDetailPhotos.length > 0) {
@@ -572,13 +572,13 @@ export default async function assetFormPage({ id } = {}) {
           for (let i = 0; i < newDetailPhotos.length; i++) {
             detailFormData.append('detailPhotos', newDetailPhotos[i]);
           }
-          await assetsAPI.uploadDetailPhotos(id, detailFormData);
+          await propertiesAPI.uploadDetailPhotos(id, detailFormData);
         }
         
         showToast('財產已更新', 'success');
-        navigate(`/assets/${id}`);
+        navigate(`/properties/${id}`);
       } else {
-        const result = await assetsAPI.create(formData);
+        const result = await propertiesAPI.create(formData);
         
         // upload detail photos if selected
         if (newDetailPhotos.length > 0) {
@@ -586,11 +586,11 @@ export default async function assetFormPage({ id } = {}) {
           for (let i = 0; i < newDetailPhotos.length; i++) {
             detailFormData.append('detailPhotos', newDetailPhotos[i]);
           }
-          await assetsAPI.uploadDetailPhotos(result.id, detailFormData);
+          await propertiesAPI.uploadDetailPhotos(result.id, detailFormData);
         }
         
         showToast('財產已建立', 'success');
-        navigate(`/assets/${result.id}`);
+        navigate(`/properties/${result.id}`);
       }
     } catch (err) {
       showToast(err.message, 'error');

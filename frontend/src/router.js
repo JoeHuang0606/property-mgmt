@@ -33,24 +33,49 @@ async function handleRoute() {
   }
 
   // 嘗試精確匹配
+  let matched = false;
   if (routes[path]) {
     currentCleanup = await routes[path]();
+    matched = true;
+  } else {
+    // 嘗試參數化匹配
+    for (const [pattern, handler] of Object.entries(routes)) {
+      const regex = patternToRegex(pattern);
+      const match = path.match(regex);
+      if (match) {
+        const params = extractParams(pattern, match);
+        currentCleanup = await handler(params);
+        matched = true;
+        break;
+      }
+    }
+  }
+  if (!matched && !routes[path]) {
+    // 404 - 導向首頁
+    navigate('/');
     return;
   }
 
-  // 嘗試參數化匹配
-  for (const [pattern, handler] of Object.entries(routes)) {
-    const regex = patternToRegex(pattern);
-    const match = path.match(regex);
-    if (match) {
-      const params = extractParams(pattern, match);
-      currentCleanup = await handler(params);
-      return;
-    }
+  // 加上浮水印
+  const target = document.querySelector('.layout-main') || document.querySelector('.login-page') || document.querySelector('#app');
+  if (target && !document.getElementById('global-watermark')) {
+    const watermark = document.createElement('div');
+    watermark.id = 'global-watermark';
+    watermark.style.cssText = `
+      padding: 24px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      opacity: 0.6;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+      margin-top: auto;
+      width: 100%;
+      line-height: 1.6;
+    `;
+    watermark.innerHTML = `Create By 黃晟宗<br>v${__APP_VERSION__}`;
+    target.appendChild(watermark);
   }
-
-  // 404 - 導向首頁
-  navigate('/');
 }
 
 function patternToRegex(pattern) {

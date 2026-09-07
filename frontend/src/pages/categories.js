@@ -74,7 +74,7 @@ async function loadCategories() {
               <tr>
                 <td data-label="分類名稱"><strong>${c.name}</strong></td>
                 <td data-label="英文前綴"><code>${c.prefix}</code></td>
-                <td data-label="財產數量"><span class="badge badge-info">${c.assetCount} 項</span></td>
+                <td data-label="財產數量"><span class="badge badge-info">${c.propertyCount} 項</span></td>
                 ${canManage ? `
                   <td data-label="操作">
                     <div class="action-btns">
@@ -82,7 +82,7 @@ async function loadCategories() {
                         <span class="material-icons-round">edit</span>
                       </button>
                       ${canDelete ? `
-                      <button class="icon-btn danger" data-delete-id="${c.id}" data-delete-name="${c.name}" data-count="${c.assetCount}" title="刪除">
+                      <button class="icon-btn danger" data-delete-id="${c.id}" data-delete-name="${c.name}" data-count="${c.propertyCount}" title="刪除">
                         <span class="material-icons-round">delete</span>
                       </button>
                       ` : ''}

@@ -1,7 +1,7 @@
 /**
  * 財產詳情頁面
  */
-import { assetsAPI } from '../api.js';
+import { propertiesAPI } from '../api.js';
 import { isManager, isAdmin, getUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { showConfirm, showModal } from '../components/modal.js';
@@ -9,7 +9,7 @@ import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
 import { renderNavbar, initNavbarEvents } from '../components/navbar.js';
 import { navigate } from '../router.js';
 
-export default async function assetDetailPage({ id } = {}) {
+export default async function propertyDetailPage({ id } = {}) {
   const app = document.getElementById('app');
 
   app.innerHTML = `
@@ -18,7 +18,7 @@ export default async function assetDetailPage({ id } = {}) {
       ${renderNavbar('財產詳情')}
       <main class="layout-main">
         <div class="page-content">
-          <div id="asset-detail-content">
+          <div id="property-detail-content">
             <div class="skeleton skeleton-title"></div>
             <div class="skeleton skeleton-card" style="height:300px;"></div>
           </div>
@@ -31,23 +31,23 @@ export default async function assetDetailPage({ id } = {}) {
   initNavbarEvents();
 
   try {
-    const asset = await assetsAPI.get(id);
-    const history = await assetsAPI.getHistory(id).catch(() => []);
-    renderDetail(asset, history);
+    const property = await propertiesAPI.get(id);
+    const history = await propertiesAPI.getHistory(id).catch(() => []);
+    renderDetail(property, history);
   } catch (err) {
-    document.getElementById('asset-detail-content').innerHTML = `
+    document.getElementById('property-detail-content').innerHTML = `
       <div class="empty-state">
         <span class="material-icons-round">error</span>
         <div class="empty-state-title">找不到財產</div>
         <div class="empty-state-desc">${err.message}</div>
-        <a href="#/assets" class="btn btn-ghost" style="margin-top:16px;">返回列表</a>
+        <a href="#/properties" class="btn btn-ghost" style="margin-top:16px;">返回列表</a>
       </div>
     `;
   }
 }
 
 function renderDetail(a, history = []) {
-  const container = document.getElementById('asset-detail-content');
+  const container = document.getElementById('property-detail-content');
   const user = getUser();
   const canManage = isAdmin() || (isManager() && (user?.assignedRoles || []).includes(a.custodianRoleId));
   const canTakeCustody = !!a.returnDate || !a.custodian;
@@ -105,20 +105,20 @@ function renderDetail(a, history = []) {
       <div>
         <h2 class="page-title">${a.name}</h2>
         <p class="page-subtitle">
-          <code style="color:var(--primary-light);margin-right:8px;">${a.assetCode}</code>
+          <code style="color:var(--primary-light);margin-right:8px;">${a.propertyCode}</code>
         </p>
       </div>
       <div style="display:flex;gap:10px;">
-        <a href="#/assets" class="btn btn-ghost">
+        <a href="#/properties" class="btn btn-ghost">
           <span class="material-icons-round">arrow_back</span>
           返回列表
         </a>
         ${canManage ? `
-          <a href="#/assets/${a.id}/edit" class="btn btn-primary">
+          <a href="#/properties/${a.id}/edit" class="btn btn-primary">
             <span class="material-icons-round">edit</span>
             編輯
           </a>
-          <button class="btn btn-danger" id="btn-delete-asset">
+          <button class="btn btn-danger" id="btn-delete-property">
             <span class="material-icons-round">delete</span>
             刪除
           </button>
@@ -126,7 +126,7 @@ function renderDetail(a, history = []) {
       </div>
     </div>
 
-    <div class="asset-detail-layout" style="display: flex; gap: 24px; flex-wrap: wrap; align-items: stretch;">
+    <div class="property-detail-layout" style="display: flex; gap: 24px; flex-wrap: wrap; align-items: stretch;">
       
       <!-- 第一列：財產資訊與財產照片 (Left Column) -->
       <div style="flex: 2.5; display: flex; flex-direction: column; gap: 24px; min-width: 300px;">
@@ -140,7 +140,7 @@ function renderDetail(a, history = []) {
             </div>
             <div class="detail-field">
               <div class="detail-label">編號</div>
-              <div class="detail-value"><code style="color:var(--primary-light);">${a.assetCode}</code></div>
+              <div class="detail-value"><code style="color:var(--primary-light);">${a.propertyCode}</code></div>
             </div>
             <div class="detail-field">
               <div class="detail-label">分類</div>
@@ -239,8 +239,8 @@ function renderDetail(a, history = []) {
           <h3 class="card-title" style="margin-bottom:16px;text-align:center;">QR Code</h3>
           <div class="qr-display" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
             ${a.qrCode ? `
-              <img src="${a.qrCode}" alt="QR Code: ${a.assetCode}" id="qr-img" style="background: white; padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 16px;" />
-              <div style="font-family: monospace; color: var(--primary-light); text-align: center; margin-bottom: 16px; letter-spacing: 1px;">${a.assetCode}</div>
+              <img src="${a.qrCode}" alt="QR Code: ${a.propertyCode}" id="qr-img" style="background: white; padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 16px;" />
+              <div style="font-family: monospace; color: var(--primary-light); text-align: center; margin-bottom: 16px; letter-spacing: 1px;">${a.propertyCode}</div>
               <div style="margin-top:auto;display:flex;gap:12px;justify-content:center;">
                 <button class="btn btn-sm" id="btn-download-qr" style="border: 1px solid var(--border-glass); background: transparent; border-radius: 20px; padding: 6px 16px;">
                   <span class="material-icons-round" style="font-size: 18px;">download</span>
@@ -262,7 +262,7 @@ function renderDetail(a, history = []) {
               ` : ''}
               ${canReturn ? `
                 <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
-                  <button class="btn btn-accent" id="btn-return-asset" data-id="${a.id}" style="width: 100%;">
+                  <button class="btn btn-accent" id="btn-return-property" data-id="${a.id}" style="width: 100%;">
                     <span class="material-icons-round">assignment_return</span>
                     確認歸還
                   </button>
@@ -283,7 +283,7 @@ function renderDetail(a, history = []) {
   if (dlBtn) {
     dlBtn.addEventListener('click', () => {
       const link = document.createElement('a');
-      link.download = `${a.assetCode}.png`;
+      link.download = `${a.propertyCode}.png`;
       link.href = a.qrCode;
       link.click();
       showToast('QR Code 已下載', 'success');
@@ -298,11 +298,11 @@ function renderDetail(a, history = []) {
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
-        <head><title>列印 QR Code - ${a.assetCode}</title></head>
+        <head><title>列印 QR Code - ${a.propertyCode}</title></head>
         <body style="text-align:center;padding:40px;font-family:sans-serif;">
           <h2>${a.name}</h2>
           <img src="${a.qrCode}" style="max-width:300px;" />
-          <p style="font-family:monospace;font-size:18px;margin-top:16px;">${a.assetCode}</p>
+          <p style="font-family:monospace;font-size:18px;margin-top:16px;">${a.propertyCode}</p>
           <p>${a.returnDate ? '-' : a.custodian} · ${formatDate(a.custodyDate)}</p>
         </body>
         </html>
@@ -320,13 +320,13 @@ function renderDetail(a, history = []) {
           const btn = e.currentTarget;
           btn.disabled = true;
           btn.innerHTML = '<span class="material-icons-round rotate">sync</span> 處理中...';
-          await assetsAPI.takeCustody(a.id);
+          await propertiesAPI.takeCustody(a.id);
           showToast('財產領取成功', 'success');
-          const [updatedAsset, historyData] = await Promise.all([
-            assetsAPI.get(a.id),
-            assetsAPI.getHistory(a.id)
+          const [updatedProperty, historyData] = await Promise.all([
+            propertiesAPI.get(a.id),
+            propertiesAPI.getHistory(a.id)
           ]);
-          renderDetail(updatedAsset, historyData);
+          renderDetail(updatedProperty, historyData);
         } catch (err) {
           showToast('領取失敗: ' + err.message, 'error');
           e.currentTarget.disabled = false;
@@ -337,7 +337,7 @@ function renderDetail(a, history = []) {
   }
 
   if (canReturn) {
-    const returnBtn = document.getElementById('btn-return-asset');
+    const returnBtn = document.getElementById('btn-return-property');
     if (returnBtn) {
       returnBtn.addEventListener('click', () => {
         const formHtml = `
@@ -408,15 +408,15 @@ function renderDetail(a, history = []) {
           try {
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<span class="material-icons-round rotate">sync</span> 處理中...';
-            await assetsAPI.returnAsset(a.id, formData);
+            await propertiesAPI.returnProperty(a.id, formData);
             showToast('財產歸還成功', 'success');
             close();
             
-            const [updatedAsset, historyData] = await Promise.all([
-              assetsAPI.get(a.id),
-              assetsAPI.getHistory(a.id)
+            const [updatedProperty, historyData] = await Promise.all([
+              propertiesAPI.get(a.id),
+              propertiesAPI.getHistory(a.id)
             ]);
-            renderDetail(updatedAsset, historyData);
+            renderDetail(updatedProperty, historyData);
           } catch (err) {
             showToast('歸還失敗: ' + err.message, 'error');
             confirmBtn.disabled = false;
@@ -428,19 +428,19 @@ function renderDetail(a, history = []) {
   }
 
   // 刪除
-  const deleteBtn = document.getElementById('btn-delete-asset');
+  const deleteBtn = document.getElementById('btn-delete-property');
   if (deleteBtn) {
     deleteBtn.addEventListener('click', () => {
       showConfirm({
         title: '刪除財產',
-        message: `確定要刪除「${a.name}」（${a.assetCode}）嗎？此操作無法復原。`,
+        message: `確定要刪除「${a.name}」（${a.propertyCode}）嗎？此操作無法復原。`,
         danger: true,
         confirmText: '刪除',
         onConfirm: async () => {
           try {
-            await assetsAPI.delete(a.id);
+            await propertiesAPI.delete(a.id);
             showToast('財產已刪除', 'success');
-            navigate('/assets');
+            navigate('/properties');
           } catch (err) {
             showToast(err.message, 'error');
           }

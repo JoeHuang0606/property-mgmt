@@ -4,10 +4,10 @@ services:
   # PostgreSQL 資料庫
   db:
     image: postgres:16-alpine
-    container_name: asset-mgmt-db
+    container_name: property-mgmt-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: asset_management
+      POSTGRES_DB: property_management
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres_password_change_me
     ports:
@@ -25,7 +25,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: asset-mgmt-backend
+    container_name: property-mgmt-backend
     restart: unless-stopped
     depends_on:
       db:
@@ -35,7 +35,7 @@ services:
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: postgres_password_change_me
-      DB_NAME: asset_management
+      DB_NAME: property_management
       JWT_SECRET: change_this_to_a_strong_random_string
       JWT_EXPIRES_IN: 8h
       PORT: 3000
@@ -50,7 +50,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: asset-mgmt-frontend
+    container_name: property-mgmt-frontend
     restart: unless-stopped
     depends_on:
       - backend

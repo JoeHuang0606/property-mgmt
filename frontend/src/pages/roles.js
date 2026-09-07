@@ -72,14 +72,14 @@ async function loadRoles() {
               <tr>
                 <td data-label="職類名稱"><strong>${r.name}</strong></td>
                 <td data-label="職類前綴"><code>${r.prefix}</code></td>
-                <td data-label="財產數量"><span class="badge badge-info">${r.assetCount} 項</span></td>
+                <td data-label="財產數量"><span class="badge badge-info">${r.propertyCount} 項</span></td>
                 ${canManage ? `
                   <td data-label="操作">
                     <div class="action-btns">
                       <button class="icon-btn edit-btn" data-edit-id="${r.id}" data-edit-name="${r.name}" data-edit-prefix="${r.prefix}" title="編輯">
                         <span class="material-icons-round">edit</span>
                       </button>
-                      <button class="icon-btn danger" data-delete-id="${r.id}" data-delete-name="${r.name}" data-count="${r.assetCount}" title="刪除">
+                      <button class="icon-btn danger" data-delete-id="${r.id}" data-delete-name="${r.name}" data-count="${r.propertyCount}" title="刪除">
                         <span class="material-icons-round">delete</span>
                       </button>
                     </div>

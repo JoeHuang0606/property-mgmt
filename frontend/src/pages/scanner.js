@@ -1,7 +1,7 @@
 /**
  * QR Code 掃描器頁面
  */
-import { assetsAPI } from '../api.js';
+import { propertiesAPI } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { showModal } from '../components/modal.js';
 import { renderSidebar, initSidebarEvents } from '../components/sidebar.js';
@@ -57,7 +57,7 @@ export default async function scannerPage() {
               <div class="card">
                 <h3 class="card-title" style="margin-bottom:16px;">或手動輸入編號</h3>
                 <div style="display:flex;gap:10px;">
-                  <input type="text" class="form-input" id="manual-code" placeholder="輸入財產編號，例如 ASSET-20260826-0001" />
+                  <input type="text" class="form-input" id="manual-code" placeholder="輸入財產編號，例如 PROPERTY-20260826-0001" />
                   <button class="btn btn-accent" id="btn-manual-search">
                     <span class="material-icons-round">search</span>
                     查詢
@@ -139,13 +139,13 @@ export default async function scannerPage() {
   // 手動查詢
   document.getElementById('btn-manual-search').addEventListener('click', () => {
     const code = document.getElementById('manual-code').value.trim();
-    if (code) lookupAsset(code);
+    if (code) lookupProperty(code);
   });
 
   document.getElementById('manual-code').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       const code = e.target.value.trim();
-      if (code) lookupAsset(code);
+      if (code) lookupProperty(code);
     }
   });
 
@@ -162,7 +162,7 @@ async function onScanSuccess(decodedText) {
   }
 
   showToast('已掃描到 QR Code', 'info');
-  await lookupAsset(decodedText);
+  await lookupProperty(decodedText);
 
   // 3 秒後恢復掃描
   setTimeout(() => {
@@ -172,7 +172,7 @@ async function onScanSuccess(decodedText) {
   }, 3000);
 }
 
-async function lookupAsset(code) {
+async function lookupProperty(code) {
   const resultEl = document.getElementById('scan-result');
 
   resultEl.innerHTML = `
@@ -183,19 +183,19 @@ async function lookupAsset(code) {
   `;
 
   try {
-    const asset = await assetsAPI.getByCode(code);
+    const property = await propertiesAPI.getByCode(code);
     const user = getUser();
     
     // 如果有歸還日期（代表目前無人保管），則可以領取
-    const canTakeCustody = !!asset.returnDate;
+    const canTakeCustody = !!property.returnDate;
 
     // 只有當前保管人可以查看並操作歸還
-    const canReturn = !asset.returnDate && asset.custodian === user?.displayName;
+    const canReturn = !property.returnDate && property.custodian === user?.displayName;
 
     // 取得保管歷史紀錄
     let historyHtml = '';
     try {
-      const history = await assetsAPI.getHistory(asset.id);
+      const history = await propertiesAPI.getHistory(property.id);
       if (history.length > 0) {
         historyHtml = `
           <div class="table-wrap" style="margin-top: 16px;">
@@ -253,7 +253,7 @@ async function lookupAsset(code) {
             <span class="material-icons-round" style="vertical-align:middle;margin-right:6px;color:var(--success);">check_circle</span>
             找到財產
           </h3>
-          <a href="#/assets/${asset.id}" class="btn btn-primary btn-sm">
+          <a href="#/properties/${property.id}" class="btn btn-primary btn-sm">
             <span class="material-icons-round">open_in_new</span>
             查看詳情
           </a>
@@ -261,36 +261,36 @@ async function lookupAsset(code) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div class="detail-field">
             <div class="detail-label">名稱</div>
-            <div class="detail-value" style="font-weight:700;">${asset.name}</div>
+            <div class="detail-value" style="font-weight:700;">${property.name}</div>
           </div>
           <div class="detail-field">
             <div class="detail-label">編號</div>
-            <div class="detail-value"><code style="color:var(--primary-light);">${asset.assetCode}</code></div>
+            <div class="detail-value"><code style="color:var(--primary-light);">${property.propertyCode}</code></div>
           </div>
           <div class="detail-field">
             <div class="detail-label">保管人</div>
-            <div class="detail-value">${asset.returnDate ? '-' : asset.custodian}</div>
+            <div class="detail-value">${property.returnDate ? '-' : property.custodian}</div>
           </div>
           <div class="detail-field">
             <div class="detail-label">歸還日期</div>
             <div class="detail-value">
-              ${asset.returnDate ? new Date(asset.returnDate).toLocaleDateString('zh-TW') : '-'}
+              ${property.returnDate ? new Date(property.returnDate).toLocaleDateString('zh-TW') : '-'}
             </div>
           </div>
           <div class="detail-field">
             <div class="detail-label">保管日期</div>
-            <div class="detail-value">${asset.custodyDate ? new Date(asset.custodyDate).toLocaleDateString('zh-TW') : '-'}</div>
+            <div class="detail-value">${property.custodyDate ? new Date(property.custodyDate).toLocaleDateString('zh-TW') : '-'}</div>
           </div>
           <div class="detail-field">
             <div class="detail-label">分類</div>
-            <div class="detail-value">${asset.categoryName || '-'}</div>
+            <div class="detail-value">${property.categoryName || '-'}</div>
           </div>
         </div>
         ${canTakeCustody ? `
         <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
           <h4 style="margin-bottom: 8px; font-size: 0.9rem; color: var(--primary-light);">領取財產</h4>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">此財產目前可供領取，點擊下方按鈕將保管人更新為您自己。</p>
-          <button class="btn btn-primary" id="btn-take-custody" data-id="${asset.id}" style="width: 100%;">
+          <button class="btn btn-primary" id="btn-take-custody" data-id="${property.id}" style="width: 100%;">
             <span class="material-icons-round">pan_tool</span>
             領取保管
           </button>
@@ -300,7 +300,7 @@ async function lookupAsset(code) {
         <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
           <h4 style="margin-bottom: 8px; font-size: 0.9rem; color: var(--primary-light);">歸還財產</h4>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">將此財產歸還並解除您的保管狀態，歸還日期將記錄為今日。</p>
-          <button class="btn btn-accent" id="btn-quick-return" data-id="${asset.id}" style="width: 100%;">
+          <button class="btn btn-accent" id="btn-quick-return" data-id="${property.id}" style="width: 100%;">
             <span class="material-icons-round">assignment_return</span>
             確認歸還
           </button>
@@ -316,9 +316,9 @@ async function lookupAsset(code) {
           const btn = e.currentTarget;
           btn.disabled = true;
           btn.innerHTML = '<span class="material-icons-round rotate">sync</span> 處理中...';
-          await assetsAPI.takeCustody(asset.id);
+          await propertiesAPI.takeCustody(property.id);
           showToast('財產領取成功', 'success');
-          lookupAsset(code); // 重新載入以更新畫面
+          lookupProperty(code); // 重新載入以更新畫面
         } catch (err) {
           showToast('領取失敗: ' + err.message, 'error');
           e.currentTarget.disabled = false;
@@ -397,10 +397,10 @@ async function lookupAsset(code) {
           try {
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<span class="material-icons-round rotate">sync</span> 處理中...';
-            await assetsAPI.returnAsset(asset.id, formData);
+            await propertiesAPI.returnProperty(property.id, formData);
             showToast('財產歸還成功', 'success');
             close();
-            lookupAsset(code); // 重新載入以更新畫面
+            lookupProperty(code); // 重新載入以更新畫面
           } catch (err) {
             showToast('歸還失敗: ' + err.message, 'error');
             confirmBtn.disabled = false;

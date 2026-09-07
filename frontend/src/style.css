@@ -1076,6 +1076,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 .login-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 20px;
@@ -1341,7 +1342,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 /* --- 資產詳情 --- */
-.asset-detail-grid {
+.property-detail-grid {
   display: grid;
   grid-template-columns: 1fr 300px;
   gap: 24px;
@@ -1557,7 +1558,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 
 /* --- 響應式 --- */
 @media (max-width: 1024px) {
-  .asset-detail-grid {
+  .property-detail-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1862,7 +1863,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   }
   
   /* Additional Grids */
-  .asset-detail-grid {
+  .property-detail-grid {
     grid-template-columns: 1fr !important;
   }
   .info-grid {

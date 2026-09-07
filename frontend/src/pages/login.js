@@ -16,7 +16,7 @@ export default function loginPage() {
           <span class="material-icons-round">business</span>
         </div>
         <h1 class="login-title">財產管理系統</h1>
-        <p class="login-subtitle">Asset Management System</p>
+        <p class="login-subtitle">Property Management System</p>
         <form class="login-form" id="login-form">
           <div class="form-group">
             <label class="form-label" for="username">帳號</label>
@@ -25,6 +25,10 @@ export default function loginPage() {
           <div class="form-group">
             <label class="form-label" for="password">密碼</label>
             <input type="password" class="form-input" id="password" placeholder="輸入您的密碼" autocomplete="current-password" required />
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="keep-logged-in" style="width:16px;height:16px;cursor:pointer;" />
+            <label for="keep-logged-in" style="cursor:pointer;font-size:0.9rem;color:var(--text-color);">保持登入</label>
           </div>
           <button type="submit" class="btn btn-primary login-btn" id="login-btn">
             <span class="material-icons-round">login</span>
@@ -46,6 +50,7 @@ export default function loginPage() {
 
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
+    const keepLoggedIn = document.getElementById('keep-logged-in').checked;
 
     if (!username || !password) {
       showToast('請輸入帳號和密碼', 'warning');
@@ -56,7 +61,7 @@ export default function loginPage() {
       btn.disabled = true;
       btn.innerHTML = '<span class="material-icons-round">hourglass_empty</span> 登入中...';
 
-      const data = await authAPI.login(username, password);
+      const data = await authAPI.login(username, password, keepLoggedIn);
       setAuth(data.token, data.user);
       showToast(`歡迎回來，${data.user.displayName}！`, 'success');
       navigate('/dashboard');

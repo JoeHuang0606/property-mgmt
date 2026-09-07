@@ -86,6 +86,17 @@ sudo docker compose down
 sudo docker compose up -d --build
 ```
 
+### ⚠️ 重大改版更新 (舊版升級到 Property 版本)
+
+如果您是從舊的 **Asset Management (v1.17 以前)** 版本升級到全新的 **Property Management (v1.18+)**，請**不要**使用標準更新流程，因為這涉及到底層資料庫的徹底重命名，直接更新會導致資料庫無法相容而當機。
+
+請嚴格遵循以下步驟升級：
+1. **備份資料 (最重要)**：在舊系統運作時，登入「系統設定 > 資料備份與還原」，把資料匯出下載成 `.json` 檔案。
+2. **停止系統並拉取新代碼**：執行 `sudo docker compose down` (切記不要加 `-v` 以保留您的照片)，然後拉取最新代碼 (同上 1~3 步)。
+3. **刪除舊資料庫以強制重建**：執行 `sudo rm -rf /var/lib/docker/volumes/property-mgmt_pgdata/_data/*` 刪除舊的 `assets` 資料庫。
+4. **啟動新系統**：執行 `sudo docker compose up -d --build`，系統會建立全新的 `properties` 資料庫。
+5. **還原資料**：登入新系統的「資料備份與還原」，將剛剛下載的 `.json` 檔案上傳並勾選「覆蓋現有資料」。系統會自動將舊的 `assets` 轉換為 `properties`，您的照片與資料即可無縫轉移！
+
 ### 常見錯誤與排除方式
 
 ---
@@ -121,7 +132,7 @@ sudo git stash pop
 
 **原因**：後端伺服器啟動時無法連線到資料庫，最常見的原因是 **密碼不一致**。
 
-**診斷方式**：查看後端日誌 `docker logs asset-mgmt-backend`。若出現 `password authentication failed`，代表 `DB_PASSWORD` 跟 `POSTGRES_PASSWORD` 不一致。
+**診斷方式**：查看後端日誌 `docker logs property-mgmt-backend`。若出現 `password authentication failed`，代表 `DB_PASSWORD` 跟 `POSTGRES_PASSWORD` 不一致。
 
 **解法**：編輯 `docker-compose.yml`，確認以下兩個欄位的密碼 **完全相同**，然後重新啟動 `docker compose down` 及 `docker compose up -d --build`。
 
@@ -180,7 +191,7 @@ docker compose up -d --build
 |------|------|------|
 | **Auth** | `/api/auth/*` | 登入、登出、驗證、變更密碼。 |
 | **Users** | `/api/users/*` | 帳號 CRUD 與權限設定。 |
-| **Assets** | `/api/assets/*` | 財產 CRUD、狀態更新、統計、QR 掃描查詢。 |
+| **Properties** | `/api/properties/*` | 財產 CRUD、狀態更新、統計、QR 掃描查詢。 |
 | **Categories** | `/api/categories/*` | 財產分類。 |
 | **Roles** | `/api/roles/*` | 職類管理。 |
 | **System** | `/api/system/*` | 系統資料匯出與匯入。 |
@@ -196,7 +207,7 @@ docker compose up -d --build
 ```nginx
 server {
     listen 80;
-    server_name assets.yourdomain.com;
+    server_name properties.yourdomain.com;
 
     location / {
         proxy_pass http://localhost:4173;
@@ -214,4 +225,4 @@ server {
 ```
 
 ---
-*Designed & Developed for Modern Asset Management Workflows.*
+*Designed & Developed for Modern Property Management Workflows.*

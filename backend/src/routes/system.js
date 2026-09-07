@@ -10,8 +10,8 @@ const ALLOWED_TABLES = [
   'categories',
   'custodian_roles',
   'user_custodian_roles',
-  'assets',
-  'asset_custody_history',
+  'properties',
+  'property_custody_history',
   'audit_logs'
 ];
 
@@ -66,6 +66,31 @@ router.post('/import', authenticate, authorize('admin'), async (req, res) => {
       return res.status(400).json({ error: '無效的匯入資料' });
     }
 
+    // 舊版備份相容性轉換：將 assets 轉換為 properties，並修改內部鍵值 asset_id -> property_id, asset_code -> property_code
+    const convertOldFormat = (obj) => {
+      if (Array.isArray(obj)) return obj.map(convertOldFormat);
+      if (obj && typeof obj === 'object') {
+        const newObj = {};
+        for (const [key, value] of Object.entries(obj)) {
+          let newKey = key;
+          if (key === 'assets') newKey = 'properties';
+          else if (key === 'asset_photos') newKey = 'property_photos';
+          else if (key === 'asset_custody_history') newKey = 'property_custody_history';
+          else if (key === 'asset_id') newKey = 'property_id';
+          else if (key === 'asset_code') newKey = 'property_code';
+          else if (key === 'target' && value === 'assets') {
+             newObj[newKey] = 'properties';
+             continue;
+          }
+          newObj[newKey] = typeof value === 'object' ? convertOldFormat(value) : value;
+        }
+        return newObj;
+      }
+      return obj;
+    };
+
+    const compatibleData = convertOldFormat(data);
+    
     if (!['overwrite', 'merge'].includes(mode)) {
       return res.status(400).json({ error: '匯入模式錯誤 (必須是 overwrite 或 merge)' });
     }
@@ -73,7 +98,7 @@ router.post('/import', authenticate, authorize('admin'), async (req, res) => {
     await client.query('BEGIN');
 
     // 取得資料庫中存在的 tables 鍵並確保在允許清單內
-    const tablesToImport = Object.keys(data).filter(t => ALLOWED_TABLES.includes(t));
+    const tablesToImport = Object.keys(compatibleData).filter(t => ALLOWED_TABLES.includes(t));
 
     // 如果是覆蓋模式，清空對應的表 (注意順序，因有關聯，使用 CASCADE 可以一次清空)
     if (mode === 'overwrite') {
@@ -84,20 +109,20 @@ router.post('/import', authenticate, authorize('admin'), async (req, res) => {
       }
     }
 
-    // 將資料倒進資料表，按依賴順序匯入 (users/roles/categories -> user_roles -> assets -> history/logs)
+    // 將資料倒進資料表，按依賴順序匯入 (users/roles/categories -> user_roles -> properties -> history/logs)
     const order = [
       'users',
       'custodian_roles',
       'categories',
       'user_custodian_roles',
-      'assets',
-      'asset_custody_history',
+      'properties',
+      'property_custody_history',
       'audit_logs'
     ];
 
     for (const table of order) {
-      if (tablesToImport.includes(table) && Array.isArray(data[table]) && data[table].length > 0) {
-        const rows = data[table];
+      if (tablesToImport.includes(table) && Array.isArray(compatibleData[table]) && compatibleData[table].length > 0) {
+        const rows = compatibleData[table];
         
         // 取得該表的所有欄位，並確保對應
         const keys = Object.keys(rows[0]);

@@ -58,11 +58,11 @@ router.get('/', async (req, res) => {
     // 資料
     const dataResult = await pool.query(
       `SELECT al.*, u.display_name AS user_display_name,
-              a.asset_code AS target_asset_code, a.name AS target_asset_name,
+              a.property_code AS target_property_code, a.name AS target_property_name,
               tu.display_name AS target_user_name
        FROM audit_logs al
        LEFT JOIN users u ON al.user_id = u.id
-       LEFT JOIN assets a ON al.target = 'assets' AND al.target_id = a.id
+       LEFT JOIN properties a ON al.target = 'properties' AND al.target_id = a.id
        LEFT JOIN users tu ON al.target = 'users' AND al.target_id = tu.id
        ${whereClause}
        ORDER BY al.created_at DESC
@@ -79,8 +79,8 @@ router.get('/', async (req, res) => {
         action: log.action,
         target: log.target,
         targetId: log.target_id,
-        targetAssetCode: log.target_asset_code,
-        targetAssetName: log.target_asset_name,
+        targetPropertyCode: log.target_property_code,
+        targetPropertyName: log.target_property_name,
         targetUserName: log.target_user_name,
         details: log.details,
         createdAt: log.created_at,

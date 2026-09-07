@@ -9,9 +9,9 @@ import { initParticles } from './particles.js';
 // 頁面模組（延遲載入）
 import loginPage from './pages/login.js';
 import dashboardPage from './pages/dashboard.js';
-import assetsPage from './pages/assets.js';
-import assetDetailPage from './pages/asset-detail.js';
-import assetFormPage from './pages/asset-form.js';
+import propertiesPage from './pages/properties.js';
+import propertyDetailPage from './pages/property-detail.js';
+import propertyFormPage from './pages/property-form.js';
 import scannerPage from './pages/scanner.js';
 import usersPage from './pages/users.js';
 import auditLogPage from './pages/audit-log.js';
@@ -74,10 +74,10 @@ addRoute('/', () => {
 });
 
 addRoute('/dashboard', authGuard(dashboardPage));
-addRoute('/assets', authGuard(assetsPage));
-addRoute('/assets/new', authGuard(assetFormPage));
-addRoute('/assets/:id', authGuard(assetDetailPage));
-addRoute('/assets/:id/edit', authGuard((params) => assetFormPage(params)));
+addRoute('/properties', authGuard(propertiesPage));
+addRoute('/properties/new', authGuard(propertyFormPage));
+addRoute('/properties/:id', authGuard(propertyDetailPage));
+addRoute('/properties/:id/edit', authGuard((params) => propertyFormPage(params)));
 addRoute('/scanner', authGuard(scannerPage));
 addRoute('/categories', authGuard(categoriesPage));
 addRoute('/users', managerGuard(usersPage));

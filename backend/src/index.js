@@ -46,7 +46,7 @@ app.use('/api/auth/login', loginLimiter);
 // =============================================
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
-app.use('/api/assets', require('./routes/assets'));
+app.use('/api/properties', require('./routes/properties'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/roles', require('./routes/roles'));
 app.use('/api/audit', require('./routes/audit'));
@@ -95,7 +95,7 @@ async function initializeDatabase() {
     try {
       await client.query("ALTER TABLE categories ADD COLUMN IF NOT EXISTS prefix VARCHAR(10) NOT NULL DEFAULT 'CAT'");
       await client.query("ALTER TABLE custodian_roles ADD COLUMN IF NOT EXISTS prefix VARCHAR(10) NOT NULL DEFAULT 'ROLE'");
-      await client.query("ALTER TABLE asset_custody_history ADD COLUMN IF NOT EXISTS return_photo TEXT");
+      await client.query("ALTER TABLE property_custody_history ADD COLUMN IF NOT EXISTS return_photo TEXT");
       await client.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT");
     } catch (e) {
       console.error('更新資料庫結構時發生錯誤:', e);

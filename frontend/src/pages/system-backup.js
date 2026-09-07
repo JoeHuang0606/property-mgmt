@@ -57,10 +57,10 @@ export default async function systemBackupPage() {
             <input type="checkbox" name="export-tables" value="user_custodian_roles" checked> 帳號與職類關聯
           </label>
           <label style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" name="export-tables" value="assets" checked> 財產資料 (Assets)
+            <input type="checkbox" name="export-tables" value="properties" checked> 財產資料 (Properties)
           </label>
           <label style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" name="export-tables" value="asset_custody_history" checked> 財產保管歷史
+            <input type="checkbox" name="export-tables" value="property_custody_history" checked> 財產保管歷史
           </label>
           <label style="display: flex; align-items: center; gap: 8px;">
             <input type="checkbox" name="export-tables" value="audit_logs" checked> 操作日誌

@@ -14,9 +14,9 @@ router.use(authenticate);
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT r.id, r.name, r.prefix, COUNT(a.id) AS asset_count
+      `SELECT r.id, r.name, r.prefix, COUNT(a.id) AS property_count
        FROM custodian_roles r
-       LEFT JOIN assets a ON r.id = a.custodian_role_id
+       LEFT JOIN properties a ON r.id = a.custodian_role_id
        GROUP BY r.id, r.name, r.prefix
        ORDER BY r.name`
     );
@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
       id: r.id,
       name: r.name,
       prefix: r.prefix,
-      assetCount: parseInt(r.asset_count),
+      propertyCount: parseInt(r.property_count),
     })));
   } catch (err) {
     console.error('取得職類列表錯誤:', err);
@@ -109,22 +109,22 @@ router.put('/:id', authorize('admin'), async (req, res) => {
 
     // 前綴變更時，更新所有相關財產的編號和 QR Code
     if (oldPrefix !== cleanPrefix) {
-      const assets = await client.query(
-        'SELECT id, asset_code FROM assets WHERE custodian_role_id = $1',
+      const properties = await client.query(
+        'SELECT id, property_code FROM properties WHERE custodian_role_id = $1',
         [id]
       );
 
-      for (const asset of assets.rows) {
+      for (const property of properties.rows) {
         // 替換編號開頭的舊職類前綴為新前綴
-        const newCode = asset.asset_code.replace(
+        const newCode = property.property_code.replace(
           new RegExp(`^${oldPrefix}-`),
           `${cleanPrefix}-`
         );
         const { generateQRCode } = require('../services/qrcode');
         const qrCode = await generateQRCode(newCode);
         await client.query(
-          'UPDATE assets SET asset_code = $1, qr_code = $2, updated_at = NOW() WHERE id = $3',
-          [newCode, qrCode, asset.id]
+          'UPDATE properties SET property_code = $1, qr_code = $2, updated_at = NOW() WHERE id = $3',
+          [newCode, qrCode, property.id]
         );
       }
     }

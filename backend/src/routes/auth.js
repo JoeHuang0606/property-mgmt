@@ -13,7 +13,7 @@ const router = express.Router();
  */
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, keepLoggedIn } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ error: '請提供帳號和密碼' });
@@ -43,6 +43,8 @@ router.post('/login', async (req, res) => {
       assignedRoles = rolesRes.rows.map(r => r.role_id);
     }
 
+    const expiresIn = keepLoggedIn ? '3650d' : (process.env.JWT_EXPIRES_IN || '8h');
+
     // 產生 JWT
     const token = jwt.sign(
       {
@@ -54,7 +56,7 @@ router.post('/login', async (req, res) => {
         assignedRoles
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+      { expiresIn }
     );
 
     // 記錄登入日誌

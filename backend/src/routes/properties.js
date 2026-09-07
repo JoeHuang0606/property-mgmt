@@ -16,7 +16,7 @@ router.use(authenticate);
 /**
  * 產生唯一財產編號
  */
-async function generateAssetCode(categoryId, custodianRoleId) {
+async function generatePropertyCode(categoryId, custodianRoleId) {
   let catPrefix = 'CAT';
   let rolePrefix = 'ROLE';
 
@@ -37,13 +37,13 @@ async function generateAssetCode(categoryId, custodianRoleId) {
   const prefix = `${rolePrefix}-${catPrefix}-`;
 
   const result = await pool.query(
-    "SELECT asset_code FROM assets WHERE asset_code LIKE $1 ORDER BY LENGTH(asset_code) DESC, asset_code DESC LIMIT 1",
+    "SELECT property_code FROM properties WHERE property_code LIKE $1 ORDER BY LENGTH(property_code) DESC, property_code DESC LIMIT 1",
     [`${prefix}%`]
   );
 
   let seq = 1;
   if (result.rows.length > 0) {
-    const lastCode = result.rows[0].asset_code;
+    const lastCode = result.rows[0].property_code;
     const lastSeqMatch = lastCode.match(/\d+$/);
     if (lastSeqMatch) {
       seq = parseInt(lastSeqMatch[0], 10) + 1;
@@ -54,7 +54,7 @@ async function generateAssetCode(categoryId, custodianRoleId) {
 }
 
 /**
- * GET /api/assets
+ * GET /api/properties
  * 列出財產（支援搜尋、篩選、分頁）
  */
 router.get('/', async (req, res) => {
@@ -76,7 +76,7 @@ router.get('/', async (req, res) => {
     let paramIndex = 1;
 
     if (search) {
-      conditions.push(`(a.name ILIKE $${paramIndex} OR a.asset_code ILIKE $${paramIndex} OR a.custodian ILIKE $${paramIndex})`);
+      conditions.push(`(a.name ILIKE $${paramIndex} OR a.property_code ILIKE $${paramIndex} OR a.custodian ILIKE $${paramIndex})`);
       values.push(`%${search}%`);
       paramIndex++;
     }
@@ -99,13 +99,13 @@ router.get('/', async (req, res) => {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     // 白名單排序
-    const allowedSorts = ['created_at', 'name', 'asset_code', 'custody_date', 'return_date'];
+    const allowedSorts = ['created_at', 'name', 'property_code', 'custody_date', 'return_date'];
     const sortColumn = allowedSorts.includes(sort) ? sort : 'created_at';
     const sortOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     // 總數
     const countResult = await pool.query(
-      `SELECT COUNT(*) FROM assets a ${whereClause}`,
+      `SELECT COUNT(*) FROM properties a ${whereClause}`,
       values
     );
     const total = parseInt(countResult.rows[0].count);
@@ -113,7 +113,7 @@ router.get('/', async (req, res) => {
     // 資料
     const dataResult = await pool.query(
       `SELECT a.*, c.name AS category_name, u.display_name AS creator_name, cr.name AS custodian_role_name, cu.avatar_url AS custodian_avatar_url
-       FROM assets a
+       FROM properties a
        LEFT JOIN categories c ON a.category_id = c.id
        LEFT JOIN users u ON a.created_by = u.id
        LEFT JOIN custodian_roles cr ON a.custodian_role_id = cr.id
@@ -127,7 +127,7 @@ router.get('/', async (req, res) => {
     res.json({
       data: dataResult.rows.map(a => ({
         id: a.id,
-        assetCode: a.asset_code,
+        propertyCode: a.property_code,
         name: a.name,
         description: a.description,
         categoryId: a.category_id,
@@ -161,7 +161,7 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * GET /api/assets/stats
+ * GET /api/properties/stats
  * 取得統計數據
  */
 router.get('/stats', async (req, res) => {
@@ -171,7 +171,7 @@ router.get('/stats', async (req, res) => {
         COUNT(*) AS total,
         COUNT(*) FILTER (WHERE custodian IS NOT NULL AND custodian != '') AS assigned,
         COUNT(*) FILTER (WHERE custodian IS NULL OR custodian = '') AS unassigned
-      FROM assets
+      FROM properties
     `);
 
     const stats = result.rows[0];
@@ -187,19 +187,19 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
- * GET /api/assets/code/:code
- * 以 asset_code 查詢（供 QR 掃描使用）
+ * GET /api/properties/code/:code
+ * 以 property_code 查詢（供 QR 掃描使用）
  */
 router.get('/code/:code', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT a.*, c.name AS category_name, u.display_name AS creator_name, cr.name AS custodian_role_name, cu.avatar_url AS custodian_avatar_url
-       FROM assets a
+       FROM properties a
        LEFT JOIN categories c ON a.category_id = c.id
        LEFT JOIN users u ON a.created_by = u.id
        LEFT JOIN custodian_roles cr ON a.custodian_role_id = cr.id
        LEFT JOIN users cu ON a.custodian = cu.username
-       WHERE a.asset_code = $1`,
+       WHERE a.property_code = $1`,
       [req.params.code]
     );
 
@@ -210,7 +210,7 @@ router.get('/code/:code', async (req, res) => {
     const a = result.rows[0];
     res.json({
       id: a.id,
-      assetCode: a.asset_code,
+      propertyCode: a.property_code,
       name: a.name,
       description: a.description,
       categoryId: a.category_id,
@@ -237,14 +237,14 @@ router.get('/code/:code', async (req, res) => {
 });
 
 /**
- * GET /api/assets/:id
+ * GET /api/properties/:id
  * 取得單一財產詳情
  */
 router.get('/:id', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT a.*, c.name AS category_name, u.display_name AS creator_name, cr.name AS custodian_role_name, cu.avatar_url AS custodian_avatar_url
-       FROM assets a
+       FROM properties a
        LEFT JOIN categories c ON a.category_id = c.id
        LEFT JOIN users u ON a.created_by = u.id
        LEFT JOIN custodian_roles cr ON a.custodian_role_id = cr.id
@@ -260,11 +260,11 @@ router.get('/:id', async (req, res) => {
     const a = result.rows[0];
     
     // 取得詳情圖
-    const photosResult = await pool.query('SELECT id, photo_url, created_at FROM asset_photos WHERE asset_id = $1 ORDER BY created_at ASC', [req.params.id]);
+    const photosResult = await pool.query('SELECT id, photo_url, created_at FROM property_photos WHERE property_id = $1 ORDER BY created_at ASC', [req.params.id]);
 
     res.json({
       id: a.id,
-      assetCode: a.asset_code,
+      propertyCode: a.property_code,
       name: a.name,
       description: a.description,
       categoryId: a.category_id,
@@ -292,7 +292,7 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * POST /api/assets
+ * POST /api/properties
  * 新增財產（admin / manager）
  */
 router.post('/', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhoto', maxCount: 1 }, { name: 'thumbnailPhoto', maxCount: 1 }]), async (req, res) => {
@@ -316,35 +316,35 @@ router.post('/', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhot
     }
 
     // 產生唯一編號
-    const assetCode = await generateAssetCode(categoryId, custodianRoleId);
+    const propertyCode = await generatePropertyCode(categoryId, custodianRoleId);
 
     // 產生 QR Code（內容為財產編號）
-    const qrCode = await generateQRCode(assetCode);
+    const qrCode = await generateQRCode(propertyCode);
 
     const result = await pool.query(
-      `INSERT INTO assets (asset_code, name, description, category_id, location, custodian, custodian_role_id, custody_date, return_date, qr_code, image_url, thumbnail_url, created_by)
+      `INSERT INTO properties (property_code, name, description, category_id, location, custodian, custodian_role_id, custody_date, return_date, qr_code, image_url, thumbnail_url, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
-      [assetCode, name, description || null, categoryId || null, location || null, custodian, custodianRoleId, custodyDate, returnDate || null, qrCode, req.files?.mainPhoto?.[0]?.filename || null, req.files?.thumbnailPhoto?.[0]?.filename || null, req.user.id]
+      [propertyCode, name, description || null, categoryId || null, location || null, custodian, custodianRoleId, custodyDate, returnDate || null, qrCode, req.files?.mainPhoto?.[0]?.filename || null, req.files?.thumbnailPhoto?.[0]?.filename || null, req.user.id]
     );
 
     const a = result.rows[0];
 
     // 新增保管歷史
     await pool.query(
-      'INSERT INTO asset_custody_history (asset_id, custodian, take_date, return_date) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO property_custody_history (property_id, custodian, take_date, return_date) VALUES ($1, $2, $3, $4)',
       [a.id, custodian, custodyDate, returnDate || null]
     );
 
     // 記錄日誌
     await pool.query(
       'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
-      [req.user.id, req.user.username, 'CREATE', 'assets', a.id, JSON.stringify({ assetCode, name })]
+      [req.user.id, req.user.username, 'CREATE', 'properties', a.id, JSON.stringify({ propertyCode, name })]
     );
 
     res.status(201).json({
       id: a.id,
-      assetCode: a.asset_code,
+      propertyCode: a.property_code,
       name: a.name,
       description: a.description,
       categoryId: a.category_id,
@@ -367,7 +367,7 @@ router.post('/', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhot
 });
 
 /**
- * PUT /api/assets/:id/return
+ * PUT /api/properties/:id/return
  * 歸還財產（僅限該財產保管人或 admin/manager）
  */
 router.put('/:id/return', authenticate, upload.single('returnPhoto'), async (req, res) => {
@@ -381,22 +381,22 @@ router.put('/:id/return', authenticate, upload.single('returnPhoto'), async (req
     }
 
     // 先查詢財產
-    const assetResult = await pool.query('SELECT * FROM assets WHERE id = $1', [id]);
-    if (assetResult.rows.length === 0) {
+    const propertyResult = await pool.query('SELECT * FROM properties WHERE id = $1', [id]);
+    if (propertyResult.rows.length === 0) {
       return res.status(404).json({ error: '找不到此財產' });
     }
-    const asset = assetResult.rows[0];
+    const property = propertyResult.rows[0];
 
     // 檢查權限：必須是 admin/manager 或是該財產的保管人 (比對 displayName)
     const isAdminOrManager = ['admin', 'manager'].includes(req.user.role);
-    const isCustodian = asset.custodian === req.user.displayName;
+    const isCustodian = property.custodian === req.user.displayName;
     
     if (!isAdminOrManager && !isCustodian) {
       return res.status(403).json({ error: '您沒有權限歸還此財產' });
     }
 
     const result = await pool.query(
-      'UPDATE assets SET return_date = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      'UPDATE properties SET return_date = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
       [returnDate || new Date(), id]
     );
 
@@ -404,14 +404,14 @@ router.put('/:id/return', authenticate, upload.single('returnPhoto'), async (req
 
     // 關閉仍在保管中的歷史紀錄，並寫入歸還照片
     await pool.query(
-      'UPDATE asset_custody_history SET return_date = $1, return_photo = $2 WHERE asset_id = $3 AND return_date IS NULL',
+      'UPDATE property_custody_history SET return_date = $1, return_photo = $2 WHERE property_id = $3 AND return_date IS NULL',
       [returnDate || new Date(), returnPhoto, id]
     );
 
     // 記錄日誌
     await pool.query(
       'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
-      [req.user.id, req.user.username, 'UPDATE', 'assets', a.id, JSON.stringify({ action: 'return', returnDate: returnDate })]
+      [req.user.id, req.user.username, 'UPDATE', 'properties', a.id, JSON.stringify({ action: 'return', returnDate: returnDate })]
     );
 
     res.json({ success: true, returnDate: a.return_date });
@@ -422,7 +422,7 @@ router.put('/:id/return', authenticate, upload.single('returnPhoto'), async (req
 });
 
 /**
- * PUT /api/assets/:id
+ * PUT /api/properties/:id
  * 編輯財產（admin / manager）
  */
 router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPhoto', maxCount: 1 }, { name: 'thumbnailPhoto', maxCount: 1 }]), async (req, res) => {
@@ -435,11 +435,11 @@ router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPh
     }
 
     // 先取得原本的財產資料
-    const oldAssetResult = await pool.query('SELECT * FROM assets WHERE id = $1', [id]);
-    if (oldAssetResult.rows.length === 0) {
+    const oldPropertyResult = await pool.query('SELECT * FROM properties WHERE id = $1', [id]);
+    if (oldPropertyResult.rows.length === 0) {
       return res.status(404).json({ error: '找不到此財產' });
     }
-    const oldAsset = oldAssetResult.rows[0];
+    const oldProperty = oldPropertyResult.rows[0];
 
     // 如果 Developer 將保管人設為 '-' (留空)，則視為強制歸還
     if (req.user.username === 'Developer' && custodian === '-') {
@@ -452,7 +452,7 @@ router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPh
       const assignedRolesRes = await pool.query('SELECT role_id FROM user_custodian_roles WHERE user_id = $1', [req.user.id]);
       const assignedRoles = assignedRolesRes.rows.map(r => r.role_id);
       
-      if (oldAsset.custodian_role_id && !assignedRoles.includes(oldAsset.custodian_role_id)) {
+      if (oldProperty.custodian_role_id && !assignedRoles.includes(oldProperty.custodian_role_id)) {
         return res.status(403).json({ error: '您沒有權限編輯此職類的財產' });
       }
       
@@ -483,29 +483,29 @@ router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPh
     values.push(parseInt(id));
 
     const result = await pool.query(
-      `UPDATE assets SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      `UPDATE properties SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
       values
     );
 
     const a = result.rows[0];
 
     // 如果保管人或保管時間有變更，則新增一筆歷史紀錄
-    if (custodian !== undefined && custodian !== oldAsset.custodian) {
+    if (custodian !== undefined && custodian !== oldProperty.custodian) {
       // 嘗試先將未歸還的歷史紀錄設為現在
       await pool.query(
-        'UPDATE asset_custody_history SET return_date = NOW() WHERE asset_id = $1 AND return_date IS NULL',
+        'UPDATE property_custody_history SET return_date = NOW() WHERE property_id = $1 AND return_date IS NULL',
         [a.id]
       );
       
       // 插入新的歷史紀錄
       await pool.query(
-        'INSERT INTO asset_custody_history (asset_id, custodian, take_date, return_date) VALUES ($1, $2, $3, $4)',
+        'INSERT INTO property_custody_history (property_id, custodian, take_date, return_date) VALUES ($1, $2, $3, $4)',
         [a.id, a.custodian, a.custody_date, a.return_date]
       );
-    } else if (returnDate !== undefined && returnDate !== oldAsset.return_date) {
+    } else if (returnDate !== undefined && returnDate !== oldProperty.return_date) {
       // 若只變更歸還時間，就更新最近的歷史紀錄
       await pool.query(
-        'UPDATE asset_custody_history SET return_date = $1 WHERE asset_id = $2 AND return_date IS NULL',
+        'UPDATE property_custody_history SET return_date = $1 WHERE property_id = $2 AND return_date IS NULL',
         [a.return_date, a.id]
       );
     }
@@ -513,12 +513,12 @@ router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPh
     // 記錄日誌
     await pool.query(
       'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
-      [req.user.id, req.user.username, 'UPDATE', 'assets', a.id, JSON.stringify({ updatedFields: Object.keys(req.body) })]
+      [req.user.id, req.user.username, 'UPDATE', 'properties', a.id, JSON.stringify({ updatedFields: Object.keys(req.body) })]
     );
 
     res.json({
       id: a.id,
-      assetCode: a.asset_code,
+      propertyCode: a.property_code,
       name: a.name,
       description: a.description,
       categoryId: a.category_id,
@@ -540,7 +540,7 @@ router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPh
 });
 
 /**
- * DELETE /api/assets/:id
+ * DELETE /api/properties/:id
  * 刪除財產（admin / manager）
  */
 router.delete('/:id', authorize('admin', 'manager'), async (req, res) => {
@@ -548,7 +548,7 @@ router.delete('/:id', authorize('admin', 'manager'), async (req, res) => {
     const { id } = req.params;
 
     const result = await pool.query(
-      'DELETE FROM assets WHERE id = $1 RETURNING asset_code, name',
+      'DELETE FROM properties WHERE id = $1 RETURNING property_code, name',
       [id]
     );
 
@@ -559,7 +559,7 @@ router.delete('/:id', authorize('admin', 'manager'), async (req, res) => {
     // 記錄日誌
     await pool.query(
       'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
-      [req.user.id, req.user.username, 'DELETE', 'assets', parseInt(id), JSON.stringify({ assetCode: result.rows[0].asset_code, name: result.rows[0].name })]
+      [req.user.id, req.user.username, 'DELETE', 'properties', parseInt(id), JSON.stringify({ propertyCode: result.rows[0].property_code, name: result.rows[0].name })]
     );
 
     res.json({ message: '財產已刪除' });
@@ -570,21 +570,21 @@ router.delete('/:id', authorize('admin', 'manager'), async (req, res) => {
 });
 
 /**
- * POST /api/assets/:id/take-custody
+ * POST /api/properties/:id/take-custody
  * 掃描領取保管
  */
 router.post('/:id/take-custody', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const assetResult = await pool.query('SELECT * FROM assets WHERE id = $1', [id]);
-    if (assetResult.rows.length === 0) {
+    const propertyResult = await pool.query('SELECT * FROM properties WHERE id = $1', [id]);
+    if (propertyResult.rows.length === 0) {
       return res.status(404).json({ error: '找不到此財產' });
     }
-    const asset = assetResult.rows[0];
+    const property = propertyResult.rows[0];
 
     // 檢查是否已歸還 (若無 return_date，代表仍有人保管)
-    if (!asset.return_date) {
+    if (!property.return_date) {
       return res.status(400).json({ error: '此財產目前仍有人保管中，無法領取' });
     }
 
@@ -595,20 +595,20 @@ router.post('/:id/take-custody', authenticate, async (req, res) => {
     const today = new Date();
     // 更新財產表
     await pool.query(
-      'UPDATE assets SET custodian = $1, custody_date = $2, return_date = NULL, updated_at = NOW() WHERE id = $3',
+      'UPDATE properties SET custodian = $1, custody_date = $2, return_date = NULL, updated_at = NOW() WHERE id = $3',
       [req.user.displayName, today, id]
     );
 
     // 寫入歷史表
     await pool.query(
-      'INSERT INTO asset_custody_history (asset_id, custodian, take_date, return_date) VALUES ($1, $2, $3, NULL)',
+      'INSERT INTO property_custody_history (property_id, custodian, take_date, return_date) VALUES ($1, $2, $3, NULL)',
       [id, req.user.displayName, today]
     );
 
     // 記錄日誌
     await pool.query(
       'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
-      [req.user.id, req.user.username, 'TAKE_CUSTODY', 'assets', parseInt(id), JSON.stringify({ custodian: req.user.displayName })]
+      [req.user.id, req.user.username, 'TAKE_CUSTODY', 'properties', parseInt(id), JSON.stringify({ custodian: req.user.displayName })]
     );
 
     res.json({ success: true, custodian: req.user.displayName, custodyDate: today });
@@ -619,19 +619,19 @@ router.post('/:id/take-custody', authenticate, async (req, res) => {
 });
 
 /**
- * GET /api/assets/:id/history
+ * GET /api/properties/:id/history
  * 取得保管歷史
  */
 router.get('/:id/history', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'SELECT * FROM asset_custody_history WHERE asset_id = $1 ORDER BY take_date DESC, created_at DESC',
+      'SELECT * FROM property_custody_history WHERE property_id = $1 ORDER BY take_date DESC, created_at DESC',
       [id]
     );
     res.json(result.rows.map(row => ({
       id: row.id,
-      assetId: row.asset_id,
+      propertyId: row.property_id,
       custodian: row.custodian,
       takeDate: row.take_date,
       returnDate: row.return_date,
@@ -645,19 +645,19 @@ router.get('/:id/history', authenticate, async (req, res) => {
 });
 
 /**
- * POST /api/assets/export-qrcodes
+ * POST /api/properties/export-qrcodes
  * 批量匯出勾選的財產 QR Code (Excel)
  */
 router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) => {
   try {
-    const { assetIds } = req.body;
-    if (!Array.isArray(assetIds) || assetIds.length === 0) {
+    const { propertyIds } = req.body;
+    if (!Array.isArray(propertyIds) || propertyIds.length === 0) {
       return res.status(400).json({ error: '請提供要匯出的財產 ID' });
     }
 
     const result = await pool.query(
-      `SELECT id, asset_code, name, qr_code FROM assets WHERE id = ANY($1) ORDER BY asset_code ASC`,
-      [assetIds]
+      `SELECT id, property_code, name, qr_code FROM properties WHERE id = ANY($1) ORDER BY property_code ASC`,
+      [propertyIds]
     );
 
     if (result.rows.length === 0) {
@@ -677,11 +677,11 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
     let colIndex = 1;
 
     for (let i = 0; i < result.rows.length; i++) {
-      const asset = result.rows[i];
-      if (!asset.qr_code) continue;
+      const property = result.rows[i];
+      if (!property.qr_code) continue;
 
       const imageId = workbook.addImage({
-        base64: asset.qr_code,
+        base64: property.qr_code,
         extension: 'png',
       });
 
@@ -693,7 +693,7 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
       });
 
       const cell = sheet.getCell(rowIndex, colIndex);
-      cell.value = `${asset.asset_code}\n${asset.name}`;
+      cell.value = `${property.property_code}\n${property.name}`;
       cell.alignment = { vertical: 'bottom', horizontal: 'center', wrapText: true };
       cell.font = { size: 9, bold: true };
 
@@ -716,7 +716,7 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
 });
 
 /**
- * POST /api/assets/:id/photos
+ * POST /api/properties/:id/photos
  * 上傳多張財產詳情圖
  */
 router.post('/:id/photos', authorize('admin', 'manager'), upload.array('detailPhotos', 10), async (req, res) => {
@@ -732,7 +732,7 @@ router.post('/:id/photos', authorize('admin', 'manager'), upload.array('detailPh
       const savedPhotos = [];
       for (const file of req.files) {
         const result = await client.query(
-          'INSERT INTO asset_photos (asset_id, photo_url) VALUES ($1, $2) RETURNING id, photo_url, created_at',
+          'INSERT INTO property_photos (property_id, photo_url) VALUES ($1, $2) RETURNING id, photo_url, created_at',
           [id, file.filename]
         );
         savedPhotos.push({
@@ -745,7 +745,7 @@ router.post('/:id/photos', authorize('admin', 'manager'), upload.array('detailPh
       // 記錄日誌
       await client.query(
         'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
-        [req.user.id, req.user.username, 'UPLOAD_PHOTOS', 'assets', parseInt(id), JSON.stringify({ count: req.files.length })]
+        [req.user.id, req.user.username, 'UPLOAD_PHOTOS', 'properties', parseInt(id), JSON.stringify({ count: req.files.length })]
       );
       
       await client.query('COMMIT');
@@ -763,7 +763,7 @@ router.post('/:id/photos', authorize('admin', 'manager'), upload.array('detailPh
 });
 
 /**
- * DELETE /api/assets/:id/photos/:photoId
+ * DELETE /api/properties/:id/photos/:photoId
  * 刪除財產詳情圖
  */
 router.delete('/:id/photos/:photoId', authorize('admin', 'manager'), async (req, res) => {
@@ -771,7 +771,7 @@ router.delete('/:id/photos/:photoId', authorize('admin', 'manager'), async (req,
     const { id, photoId } = req.params;
     
     const result = await pool.query(
-      'DELETE FROM asset_photos WHERE id = $1 AND asset_id = $2 RETURNING photo_url',
+      'DELETE FROM property_photos WHERE id = $1 AND property_id = $2 RETURNING photo_url',
       [photoId, id]
     );
 
@@ -792,7 +792,7 @@ router.delete('/:id/photos/:photoId', authorize('admin', 'manager'), async (req,
     // 記錄日誌
     await pool.query(
       'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
-      [req.user.id, req.user.username, 'DELETE_PHOTO', 'assets', parseInt(id), JSON.stringify({ photoId })]
+      [req.user.id, req.user.username, 'DELETE_PHOTO', 'properties', parseInt(id), JSON.stringify({ photoId })]
     );
 
     res.json({ success: true });

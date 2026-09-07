@@ -51,10 +51,10 @@ async function request(endpoint, options = {}) {
 
 // Auth API
 export const authAPI = {
-  login: (username, password) =>
+  login: (username, password, keepLoggedIn) =>
     request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, keepLoggedIn }),
     }),
   me: () => request('/auth/me'),
   changePassword: (currentPassword, newPassword) =>
@@ -88,51 +88,51 @@ export const usersAPI = {
     }),
 };
 
-// Assets API
-export const assetsAPI = {
+// Properties API
+export const propertiesAPI = {
   list: (params = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== '' && v !== null) query.set(k, v);
     });
-    return request(`/assets?${query.toString()}`);
+    return request(`/properties?${query.toString()}`);
   },
-  get: (id) => request(`/assets/${id}`),
-  getByCode: (code) => request(`/assets/code/${code}`),
-  stats: () => request('/assets/stats'),
+  get: (id) => request(`/properties/${id}`),
+  getByCode: (code) => request(`/properties/code/${code}`),
+  stats: () => request('/properties/stats'),
   create: (data) =>
-    request('/assets', {
+    request('/properties', {
       method: 'POST',
       body: data instanceof FormData ? data : JSON.stringify(data),
     }),
   update: (id, data) =>
-    request(`/assets/${id}`, {
+    request(`/properties/${id}`, {
       method: 'PUT',
       body: data instanceof FormData ? data : JSON.stringify(data),
     }),
-  returnAsset: (id, formData) =>
-    request(`/assets/${id}/return`, {
+  returnProperty: (id, formData) =>
+    request(`/properties/${id}/return`, {
       method: 'PUT',
       body: formData,
     }),
   takeCustody: (id) =>
-    request(`/assets/${id}/take-custody`, {
+    request(`/properties/${id}/take-custody`, {
       method: 'POST',
     }),
-  getHistory: (id) => request(`/assets/${id}/history`),
+  getHistory: (id) => request(`/properties/${id}/history`),
   delete: (id) =>
-    request(`/assets/${id}`, {
+    request(`/properties/${id}`, {
       method: 'DELETE',
     }),
-  exportQRCodes: async (assetIds) => {
+  exportQRCodes: async (propertyIds) => {
     const token = getToken();
-    const res = await fetch('/api/assets/export-qrcodes', {
+    const res = await fetch('/api/properties/export-qrcodes', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
-      body: JSON.stringify({ assetIds }),
+      body: JSON.stringify({ propertyIds }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -149,12 +149,12 @@ export const assetsAPI = {
     URL.revokeObjectURL(url);
   },
   uploadDetailPhotos: (id, formData) =>
-    request(`/assets/${id}/photos`, {
+    request(`/properties/${id}/photos`, {
       method: 'POST',
       body: formData,
     }),
   deleteDetailPhoto: (id, photoId) =>
-    request(`/assets/${id}/photos/${photoId}`, {
+    request(`/properties/${id}/photos/${photoId}`, {
       method: 'DELETE',
     }),
 };
