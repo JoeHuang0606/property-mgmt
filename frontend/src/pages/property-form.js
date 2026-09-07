@@ -19,19 +19,20 @@ export default async function propertyFormPage({ id } = {}) {
       ${renderNavbar(isEdit ? '編輯財產' : '新增財產')}
       <main class="layout-main">
         <div class="page-content">
-          <div class="page-header">
-            <div>
-              <h2 class="page-title">${isEdit ? '編輯財產' : '新增財產'}</h2>
-              <p class="page-subtitle">${isEdit ? '修改財產資訊' : '建立新的財產紀錄'}</p>
+          <div style="max-width: 800px; margin: 0 auto;">
+            <div class="page-header">
+              <div>
+                <h2 class="page-title">${isEdit ? '編輯財產' : '新增財產'}</h2>
+                <p class="page-subtitle">${isEdit ? '修改財產資訊' : '建立新的財產紀錄'}</p>
+              </div>
+              <a href="#/properties" class="btn btn-ghost">
+                <span class="material-icons-round">arrow_back</span>
+                返回列表
+              </a>
             </div>
-            <a href="#/properties" class="btn btn-ghost">
-              <span class="material-icons-round">arrow_back</span>
-              返回列表
-            </a>
-          </div>
 
-          <div class="card" style="max-width:800px;">
-            <form id="property-form">
+            <div class="card">
+              <form id="property-form">
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label" for="name">名稱 *</label>
@@ -141,6 +142,7 @@ export default async function propertyFormPage({ id } = {}) {
                 <a href="#/properties" class="btn btn-ghost btn-lg">取消</a>
               </div>
             </form>
+          </div>
           </div>
         </div>
       </main>

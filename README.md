@@ -1,6 +1,6 @@
-# 📦 財產管理系統 (Property Management System) v0.17.2
+# 📦 財產管理系統 (Property Management System) v1.0.0
 
-![Version](https://img.shields.io/badge/version-0.17.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-v20+-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgres-16-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
@@ -25,6 +25,7 @@
 | 🏷️ **連動更新與防呆機制** | 修改分類或職類前綴時，自動同步更新所有相關財產編號；已歸還財產的保管人欄位會自動切換為「-」。 |
 | 🔍 **進階快速篩選** | 財產列表支援「職類篩選」與「只顯示我的財產」快速篩選，精準定位所需資產。 |
 | 🔄 **無痛升級與向下相容** | 伺服器啟動時會自動偵測並修正舊版資料庫結構缺失，部署新版完全無痛。 |
+| 📱 **PWA 桌面/手機安裝** | 支援漸進式網路應用 (PWA)，無論 iOS、Android 手機或電腦版 Chrome/Edge，皆可「加到主畫面」或「安裝為應用程式」，擁有專屬 App Icon 與獨立沉浸視窗體驗。 |
 
 ---
 
@@ -88,7 +89,7 @@ sudo docker compose up -d --build
 
 ### ⚠️ 重大改版更新 (舊版升級到 Property 版本)
 
-如果您是從舊的 **Asset Management (v1.17 以前)** 版本升級到全新的 **Property Management (v1.18+)**，請**不要**使用標準更新流程，因為這涉及到底層資料庫的徹底重命名，直接更新會導致資料庫無法相容而當機。
+如果您是從舊的 **Asset Management (v0.17 以前)** 版本升級到全新的 **Property Management (v1.0+)**，請**不要**使用標準更新流程，因為這涉及到底層資料庫的徹底重命名，直接更新會導致資料庫無法相容而當機。
 
 請嚴格遵循以下步驟升級：
 1. **備份資料 (最重要)**：在舊系統運作時，登入「系統設定 > 資料備份與還原」，把資料匯出下載成 `.json` 檔案。

@@ -13,7 +13,7 @@ export default function loginPage() {
     <div class="login-page">
       <div class="login-card">
         <div class="login-logo">
-          <span class="material-icons-round">business</span>
+          <img src="/icon-192x192.png" alt="Logo" class="app-icon" style="width: 100%; height: 100%; object-fit: cover;" />
         </div>
         <h1 class="login-title">財產管理系統</h1>
         <p class="login-subtitle">Property Management System</p>
