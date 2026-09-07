@@ -58,7 +58,7 @@ export function renderSidebar() {
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <div class="sidebar-logo">
-          <span class="material-icons-round">business</span>
+          <img src="/icon-192x192.png" alt="Logo" class="app-icon" style="width: 100%; height: 100%; object-fit: cover;" />
         </div>
         <span class="sidebar-brand-text">財產管理系統</span>
       </div>

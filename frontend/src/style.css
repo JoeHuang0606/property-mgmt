@@ -203,8 +203,13 @@ a:hover {
 }
 
 .page-content {
-  padding: 28px 32px;
+  flex: 1;
+  width: 100%;
   max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes fadeInUp {
@@ -1074,12 +1079,17 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 
 /* --- 登入頁 --- */
 .login-page {
-  min-height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  z-index: 10;
 }
 
 .login-card {
@@ -1952,4 +1962,21 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* --- App Icon --- */
+.app-icon {
+  border-radius: 22%;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.login-logo {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.sidebar-logo {
+  background: none !important;
+  box-shadow: none !important;
 }
