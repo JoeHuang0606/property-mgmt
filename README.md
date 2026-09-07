@@ -1,6 +1,6 @@
-# 📦 財產管理系統 (Property Management System) v1.0.0
+# 📦 財產管理系統 (Property Management System) v1.0.1
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
 ![Node](https://img.shields.io/badge/node-v20+-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgres-16-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
@@ -226,4 +226,19 @@ server {
 ```
 
 ---
-*Designed & Developed for Modern Property Management Workflows.*
+*Designed & Developed for Modern Property Management Workflows (v1.0.1).*
+
+---
+
+## 📜 版本更新紀錄 (Changelog)
+
+### v1.0.1 (Current)
+- **Fix:** 修復因瀏覽器右側側邊欄/擴充套件面板擠壓 viewport 導致的登入畫面視覺偏移偏左問題，改採 `position: fixed` 與 `translate` 進行絕對置中。
+- **Fix:** 修復登入卡片 `fadeInUp` 動畫在執行期間覆蓋了置中屬性 `transform`，導致畫面載入時卡片出現在右下角再閃現回中間的閃爍異常。
+- **Chore:** 更新專案各處版本號至 `1.0.1`。
+
+### v1.0.0
+- **Feat:** 新增 PWA 支援，允許將網頁安裝為桌面與手機應用程式 (Android/iOS)。
+- **Refactor:** 將 Asset 全面重構更名為 Property 財產。
+- **Feat:** 全新重構絕美的 iOS Liquid Glassmorphism (液態玻璃) 介面設計。
+- **Docs:** 完成所有核心功能驗證，重寫詳盡的專案說明文件並正式發布。
