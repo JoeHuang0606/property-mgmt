@@ -224,6 +224,18 @@ a:hover {
   }
 }
 
+@keyframes fadeInUpLogin {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 16px));
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1103,7 +1115,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   max-width: 420px;
   box-shadow: var(--shadow-lg), var(--shadow-glow);
   pointer-events: auto;
-  animation: fadeInUp 0.5s ease-out;
+  animation: fadeInUpLogin 0.5s ease-out forwards;
 }
 
 .login-logo {
