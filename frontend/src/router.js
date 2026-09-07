@@ -62,6 +62,10 @@ async function handleRoute() {
     const watermark = document.createElement('div');
     watermark.id = 'global-watermark';
     watermark.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
       padding: 24px;
       text-align: center;
       font-size: 0.75rem;
@@ -69,9 +73,9 @@ async function handleRoute() {
       opacity: 0.6;
       letter-spacing: 0.5px;
       pointer-events: none;
-      margin-top: auto;
       width: 100%;
       line-height: 1.6;
+      z-index: 1000;
     `;
     watermark.innerHTML = `Create By 黃晟宗<br>v${__APP_VERSION__}`;
     target.appendChild(watermark);
