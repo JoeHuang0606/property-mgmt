@@ -12,6 +12,7 @@ let currentPage = 1;
 let currentSearch = '';
 let currentCategory = '';
 let currentRole = '';
+let currentLimit = 15;
 let isMyPropertiesOnly = false;
 let selectedPropertyIds = new Set();
 
@@ -225,7 +226,7 @@ async function loadProperties() {
   try {
     const queryParams = {
       page: currentPage,
-      limit: 15,
+      limit: currentLimit,
       search: currentSearch,
       category_id: currentCategory,
       custodian_role_id: currentRole,
@@ -403,6 +404,17 @@ async function loadProperties() {
 
     // 分頁
     const { page, totalPages, total } = data.pagination;
+    
+    let containerHtml = `<div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 16px;">
+      <div class="pagination-limit">
+        <select id="limit-select" class="form-input" style="padding: 6px 12px; font-size: 0.85rem; height: auto; border-radius: var(--radius-sm); min-width: 120px;">
+          <option value="15" ${currentLimit === 15 ? 'selected' : ''}>15 筆 / 頁</option>
+          <option value="30" ${currentLimit === 30 ? 'selected' : ''}>30 筆 / 頁</option>
+          <option value="50" ${currentLimit === 50 ? 'selected' : ''}>50 筆 / 頁</option>
+          <option value="10000" ${currentLimit > 50 ? 'selected' : ''}>全部顯示</option>
+        </select>
+      </div>`;
+
     if (totalPages > 1) {
       let paginationHtml = `<div class="pagination">`;
       paginationHtml += `<button class="pagination-btn" ${page <= 1 ? 'disabled' : ''} data-page="${page - 1}">
@@ -431,19 +443,30 @@ async function loadProperties() {
       </button>`;
       paginationHtml += `<span class="pagination-info">共 ${total} 項</span>`;
       paginationHtml += `</div>`;
-
-      paginationEl.innerHTML = paginationHtml;
-
-      paginationEl.querySelectorAll('[data-page]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          currentPage = parseInt(btn.dataset.page);
-          loadProperties();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-      });
+      containerHtml += paginationHtml;
     } else {
-      paginationEl.innerHTML = '';
+      containerHtml += `<div class="pagination"><span class="pagination-info">共 ${total} 項</span></div>`;
     }
+
+    containerHtml += `</div>`;
+    paginationEl.innerHTML = containerHtml;
+
+    const limitSelect = document.getElementById('limit-select');
+    if (limitSelect) {
+      limitSelect.addEventListener('change', (e) => {
+        currentLimit = parseInt(e.target.value, 10);
+        currentPage = 1;
+        loadProperties();
+      });
+    }
+
+    paginationEl.querySelectorAll('[data-page]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentPage = parseInt(btn.dataset.page);
+        loadProperties();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
   } catch (err) {
     tableEl.innerHTML = `
       <div class="empty-state">

@@ -7,6 +7,7 @@ const ExcelJS = require('exceljs');
 const upload = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 
 const router = express.Router();
 
@@ -258,7 +259,7 @@ router.get('/:id', async (req, res) => {
     }
 
     const a = result.rows[0];
-    
+
     // 取得詳情圖
     const photosResult = await pool.query('SELECT id, photo_url, created_at FROM property_photos WHERE property_id = $1 ORDER BY created_at ASC', [req.params.id]);
 
@@ -390,7 +391,7 @@ router.put('/:id/return', authenticate, upload.single('returnPhoto'), async (req
     // 檢查權限：必須是 admin/manager 或是該財產的保管人 (比對 displayName)
     const isAdminOrManager = ['admin', 'manager'].includes(req.user.role);
     const isCustodian = property.custodian === req.user.displayName;
-    
+
     if (!isAdminOrManager && !isCustodian) {
       return res.status(403).json({ error: '您沒有權限歸還此財產' });
     }
@@ -451,11 +452,11 @@ router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPh
     if (req.user.role === 'manager') {
       const assignedRolesRes = await pool.query('SELECT role_id FROM user_custodian_roles WHERE user_id = $1', [req.user.id]);
       const assignedRoles = assignedRolesRes.rows.map(r => r.role_id);
-      
+
       if (oldProperty.custodian_role_id && !assignedRoles.includes(oldProperty.custodian_role_id)) {
         return res.status(403).json({ error: '您沒有權限編輯此職類的財產' });
       }
-      
+
       if (custodianRoleId !== undefined && !assignedRoles.includes(parseInt(custodianRoleId))) {
         return res.status(403).json({ error: '您沒有權限將財產變更為此職類' });
       }
@@ -496,7 +497,7 @@ router.put('/:id', authorize('admin', 'manager'), upload.fields([{ name: 'mainPh
         'UPDATE property_custody_history SET return_date = NOW() WHERE property_id = $1 AND return_date IS NULL',
         [a.id]
       );
-      
+
       // 插入新的歷史紀錄
       await pool.query(
         'INSERT INTO property_custody_history (property_id, custodian, take_date, return_date) VALUES ($1, $2, $3, $4)',
@@ -678,24 +679,67 @@ router.post('/export-qrcodes', authorize('admin', 'manager'), async (req, res) =
 
     for (let i = 0; i < result.rows.length; i++) {
       const property = result.rows[i];
-      if (!property.qr_code) continue;
+      const qrBuffer = Buffer.from(property.qr_code.split(',')[1], 'base64');
+
+      const escapeXml = (unsafe) => {
+        return unsafe.replace(/[<>&'"]/g, function (c) {
+          switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+          }
+        });
+      };
+
+      const safeName = escapeXml(property.name);
+      const safeCode = escapeXml(property.property_code);
+
+      const qrImage = await sharp(qrBuffer).resize(200, 200).toBuffer();
+
+      const textSvg = `
+        <svg width="200" height="60" xmlns="http://www.w3.org/2000/svg">
+          <text x="100" y="15" font-family="sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="black">${safeCode}</text>
+          <text x="100" y="37" font-family="sans-serif" font-size="16" text-anchor="middle" fill="black">${safeName}</text>
+        </svg>
+      `;
+
+      // 確保 textImg 寬度不會超過 200，避免 composite 失敗
+      const textImg = await sharp(Buffer.from(textSvg))
+        .resize({ width: 200, withoutEnlargement: true })
+        .toBuffer();
+
+      const combinedBuffer = await sharp({
+        create: {
+          width: 200,
+          height: 300,
+          channels: 4,
+          background: { r: 255, g: 255, b: 255, alpha: 1 }
+        }
+      })
+        .composite([
+          { input: qrImage, top: 0, left: 0 },
+          { input: textImg, top: 200, left: 0 }
+        ])
+        .extract({ left: 0, top: 0, width: 200, height: 260 })
+        .png()
+        .toBuffer();
+
+      const combinedBase64 = 'data:image/png;base64,' + combinedBuffer.toString('base64');
 
       const imageId = workbook.addImage({
-        base64: property.qr_code,
+        base64: combinedBase64,
         extension: 'png',
       });
 
-      sheet.getRow(rowIndex).height = 85; // 3cm 大約是 85 points
+      sheet.getRow(rowIndex).height = 70.5; // 增加高度以容納文字
+      sheet.getColumn(colIndex).width = 9.75; // 調整欄寬
 
       sheet.addImage(imageId, {
         tl: { col: colIndex - 1, row: rowIndex - 1 },
-        ext: { width: 76, height: 76 } // 2cm 大約是 76 pixels
+        ext: { width: 72, height: 94 } // 200x260 -> 72x94
       });
-
-      const cell = sheet.getCell(rowIndex, colIndex);
-      cell.value = `${property.property_code}\n${property.name}`;
-      cell.alignment = { vertical: 'bottom', horizontal: 'center', wrapText: true };
-      cell.font = { size: 9, bold: true };
 
       colIndex += 1;
       if (colIndex > 9) {
@@ -741,13 +785,13 @@ router.post('/:id/photos', authorize('admin', 'manager'), upload.array('detailPh
           createdAt: result.rows[0].created_at
         });
       }
-      
+
       // 記錄日誌
       await client.query(
         'INSERT INTO audit_logs (user_id, username, action, target, target_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
         [req.user.id, req.user.username, 'UPLOAD_PHOTOS', 'properties', parseInt(id), JSON.stringify({ count: req.files.length })]
       );
-      
+
       await client.query('COMMIT');
       res.json({ photos: savedPhotos });
     } catch (e) {
@@ -769,7 +813,7 @@ router.post('/:id/photos', authorize('admin', 'manager'), upload.array('detailPh
 router.delete('/:id/photos/:photoId', authorize('admin', 'manager'), async (req, res) => {
   try {
     const { id, photoId } = req.params;
-    
+
     const result = await pool.query(
       'DELETE FROM property_photos WHERE id = $1 AND property_id = $2 RETURNING photo_url',
       [photoId, id]

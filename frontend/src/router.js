@@ -61,11 +61,18 @@ async function handleRoute() {
   if (target && !document.getElementById('global-watermark')) {
     const watermark = document.createElement('div');
     watermark.id = 'global-watermark';
+    const isLogin = target.classList.contains('login-page');
     watermark.style.cssText = `
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
+      ${isLogin ? `
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+      ` : `
+        position: static;
+        margin-top: 40px;
+        margin-bottom: 24px;
+      `}
       padding: 24px;
       text-align: center;
       font-size: 0.75rem;

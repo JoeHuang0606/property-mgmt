@@ -1,6 +1,6 @@
-# 📦 財產管理系統 (Property Management System) v1.0.1
+# 📦 財產管理系統 (Property Management System) v1.1.0
 
-![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-v20+-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgres-16-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
@@ -226,13 +226,20 @@ server {
 ```
 
 ---
-*Designed & Developed for Modern Property Management Workflows (v1.0.1).*
+*Designed & Developed for Modern Property Management Workflows (v1.1.0).*
 
 ---
 
 ## 📜 版本更新紀錄 (Changelog)
 
-### v1.0.1 (Current)
+### v1.1.0 (Current)
+- **Feat:** 財產匯出清單的 QR Code 圖片直接合成「財產名稱」與「財產編號 (Property Code)」，讓列印標籤更直覺。
+- **Feat:** 財產列表分頁選項新增「全部顯示」選項。
+- **Feat:** 調整浮水印行為，移至頁面最底端（需滾動到底部才可見）。
+- **Fix:** 改良 QR Code 圖片的文字產生器為高清晰度 SVG，設定絕對字級並強制垂直居中，解決文字長短影響字級與解析度模糊的問題，且自動鎖定排版列高。
+- **Chore:** 更新專案各處版本號至 `1.1.0`。
+
+### v1.0.1
 - **Fix:** 修復因瀏覽器右側側邊欄/擴充套件面板擠壓 viewport 導致的登入畫面視覺偏移偏左問題，改採 `position: fixed` 與 `translate` 進行絕對置中。
 - **Fix:** 修復登入卡片 `fadeInUp` 動畫在執行期間覆蓋了置中屬性 `transform`，導致畫面載入時卡片出現在右下角再閃現回中間的閃爍異常。
 - **Chore:** 更新專案各處版本號至 `1.0.1`。
